@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Agendamentos PETRONAS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .status-pendente {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-aprovado {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-reprovado {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-cancelado {
+            background-color: #f3f4f6;
+            color: #374151;
+        }
+    </style>
+</head>
+
+<body class="min-h-full bg-gray-50">
+    <!-- Header -->
+    <div class="gradient-bg text-white py-6">
+        <div class="max-w-6xl mx-auto px-4">
+            <h1 class="text-3xl font-bold text-center mb-2">🏢 Sistema de Agendamentos PETRONAS</h1>
+            <p class="text-center text-blue-100">Gestão Completa de Acessos e Autorizações</p>
+        </div>
+    </div>
+
+    <!-- Seleção de Login -->
+    <div id="login-selection" class="max-w-5xl mx-auto px-4 py-12">
+        <h2 class="text-2xl font-bold text-center text-gray-800 mb-8">Selecione seu Perfil de Acesso</h2>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Login Administrativo -->
+            <div class="bg-white rounded-lg shadow-lg p-6 card-hover cursor-pointer border-l-4 border-purple-600"
+                onclick="showLogin('admin')">
+                <div class="text-center">
+                    <span class="text-4xl mb-4 block">🛡️</span>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Administrativo</h3>
+                    <p class="text-gray-600 text-sm">Acesso Geral</p>
+                    <p class="text-xs text-gray-500 mt-2">Superusuário</p>
+                </div>
+            </div>
+            <!-- Login Diretoria -->
+            <div class="bg-white rounded-lg shadow-lg p-6 card-hover cursor-pointer border-l-4 border-red-500"
+                onclick="showLogin('diretoria')">
+                <div class="text-center">
+                    <span class="text-4xl mb-4 block">👔</span>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Diretoria</h3>
+                    <p class="text-gray-600 text-sm">Autorizações e Reprovações</p>
+                    <p class="text-xs text-gray-500 mt-2">Alta Gestão</p>
+                </div>
+            </div>
+
+            <!-- Login Solicitante -->
+            <div class="bg-white rounded-lg shadow-lg p-6 card-hover cursor-pointer border-l-4 border-blue-500"
+                onclick="showLogin('solicitante')">
+                <div class="text-center">
+                    <span class="text-4xl mb-4 block">🧑‍💼</span>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Solicitante</h3>
+                    <p class="text-gray-600 text-sm">Empresas e Gerentes</p>
+                    <p class="text-xs text-gray-500 mt-2">Criar Agendamentos</p>
+                </div>
+            </div>
+
+            <!-- Login Portaria -->
+            <div class="bg-white rounded-lg shadow-lg p-6 card-hover cursor-pointer border-l-4 border-green-500"
+                onclick="showLogin('portaria')">
+                <div class="text-center">
+                    <span class="text-4xl mb-4 block">🛂</span>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Portaria</h3>
+                    <p class="text-gray-600 text-sm">Controle de Acesso</p>
+                    <p class="text-xs text-gray-500 mt-2">Liberação de Entrada</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Forms -->
+    <div id="login-forms" class="hidden max-w-md mx-auto px-4 py-8">
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <div class="text-center mb-6">
+                <span id="login-icon" class="text-4xl block mb-2"></span>
+                <h2 id="login-title" class="text-2xl font-bold text-gray-800"></h2>
+                <p id="login-subtitle" class="text-gray-600"></p>
+            </div>
+
+            <form id="login-form">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">👤 Usuário:</label>
+                    <input type="text" id="username"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">🔒 Senha:</label>
+                    <input type="password" id="password"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required>
+                </div>
+                <button type="submit"
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
+                    Entrar
+                </button>
+                <button type="button" onclick="backToSelection()"
+                    class="w-full mt-3 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg transition duration-300">
+                    ← Voltar
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard Administrativo -->
+    <div id="dashboard-admin" class="hidden max-w-7xl mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-800 flex items-center">
+                    <span class="text-4xl mr-3">🛡️</span>
+                    Painel Administrativo
+                </h2>
+                <p class="text-gray-600">Bem-vinda, <span class="font-semibold">Karen - Administradora Geral</span></p>
+            </div>
+            <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">Sair</button>
+        </div>
+
+        <!-- Menu de Administração -->
+        <div class="grid md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-lg p-6 card-hover cursor-pointer border-l-4 border-blue-500"
+                onclick="showUserManagement()">
+                <div class="flex items-center">
+                    <span class="text-3xl mr-4">👥</span>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800">Gerenciar Usuários</h3>
+                        <p class="text-gray-600 text-sm">Criar, editar e remover usuários</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-lg p-6 card-hover cursor-pointer border-l-4 border-green-500"
+                onclick="showSystemConfig()">
+                <div class="flex items-center">
+                    <span class="text-3xl mr-4">⚙️</span>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800">Configurações</h3>
+                        <p class="text-gray-600 text-sm">Parâmetros do sistema</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-lg p-6 card-hover cursor-pointer border-l-4 border-orange-500"
+                onclick="showReports()">
+                <div class="flex items-center">
+                    <span class="text-3xl mr-4">📊</span>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800">Relatórios</h3>
+                        <p class="text-gray-600 text-sm">Logs e históricos completos</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estatísticas Gerais -->
+        <div class="grid md:grid-cols-5 gap-4 mb-8">
+            <div class="bg-white rounded-lg shadow p-4 text-center">
+                <div class="text-2xl font-bold text-purple-600">1</div>
+                <div class="text-xs text-gray-600">Administradores</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 text-center">
+                <div class="text-2xl font-bold text-red-600">3</div>
+                <div class="text-xs text-gray-600">Diretores</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 text-center">
+                <div class="text-2xl font-bold text-blue-600">15</div>
+                <div class="text-xs text-gray-600">Solicitantes</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 text-center">
+                <div class="text-2xl font-bold text-green-600">8</div>
+                <div class="text-xs text-gray-600">Portaria</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 text-center">
+                <div class="text-2xl font-bold text-yellow-600">127</div>
+                <div class="text-xs text-gray-600">Agendamentos</div>
+            </div>
+        </div>
+
+        <!-- Gerenciamento de Usuários -->
+        <div id="user-management" class="bg-white rounded-lg shadow mb-6">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-bold text-gray-800">👥 Gerenciamento de Usuários</h3>
+                <button onclick="showNewUserForm()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">➕ Novo Usuário</button>
+            </div>
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left">Nome</th>
+                                <th class="px-4 py-2 text-left">E-mail</th>
+                                <th class="px-4 py-2 text-left">Perfil</th>
+                                <th class="px-4 py-2 text-left">Status</th>
+                                <th class="px-4 py-2 text-left">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            <tr>
+                                <td class="px-4 py-2">Karen Administradora</td>
+                                <td class="px-4 py-2">karen@adm.com</td>
+                                <td class="px-4 py-2"><span
+                                        class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">🛡️ Admin</span>
+                                </td>
+                                <td class="px-4 py-2"><span
+                                        class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Ativo</span></td>
+                                <td class="px-4 py-2">
+                                    <button
+                                        class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs mr-1">✏️</button>
+                                    <button
+                                        class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">🗑️</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-2">João Diretor</td>
+                                <td class="px-4 py-2">joao.diretor@petronas.com</td>
+                                <td class="px-4 py-2"><span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs">👔
+                                        Diretoria</span></td>
+                                <td class="px-4 py-2"><span
+                                        class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Ativo</span></td>
+                                <td class="px-4 py-2">
+                                    <button
+                                        class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs mr-1">✏️</button>
+                                    <button
+                                        class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">🗑️</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-2">Maria Gerente</td>
+                                <td class="px-4 py-2">maria.techserv@empresa.com</td>
+                                <td class="px-4 py-2"><span
+                                        class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">🧑‍💼
+                                        Solicitante</span></td>
+                                <td class="px-4 py-2"><span
+                                        class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Ativo</span></td>
+                                <td class="px-4 py-2">
+                                    <button
+                                        class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs mr-1">✏️</button>
+                                    <button
+                                        class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">🗑️</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-2">Carlos Porteiro</td>
+                                <td class="px-4 py-2">carlos.portaria@petronas.com</td>
+                                <td class="px-4 py-2"><span
+                                        class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">🛂 Portaria</span>
+                                </td>
+                                <td class="px-4 py-2"><span
+                                        class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Ativo</span></td>
+                                <td class="px-4 py-2">
+                                    <button
+                                        class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs mr-1">✏️</button>
+                                    <button
+                                        class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">🗑️</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs do Sistema -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b">
+                <h3 class="text-xl font-bold text-gray-800">📋 Logs Recentes do Sistema</h3>
+            </div>
+            <div class="p-6">
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between items-center p-3 bg-green-50 rounded">
+                        <span>✅ Login realizado: joao.diretor@petronas.com</span>
+                        <span class="text-gray-500">25/01/2024 14:32</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-blue-50 rounded">
+                        <span>📝 Agendamento aprovado: TechServ - Manutenção Emergencial</span>
+                        <span class="text-gray-500">25/01/2024 14:15</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-yellow-50 rounded">
+                        <span>🆕 Novo usuário criado: maria.techserv@empresa.com</span>
+                        <span class="text-gray-500">25/01/2024 13:45</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-red-50 rounded">
+                        <span>❌ Agendamento reprovado: Visita sem documentação</span>
+                        <span class="text-gray-500">25/01/2024 13:20</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Diretoria -->
+    <div id="dashboard-diretoria" class="hidden max-w-7xl mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-800 flex items-center">
+                    <span class="text-4xl mr-3">👔</span>
+                    Dashboard Diretoria
+                </h2>
+                <p class="text-gray-600">Bem-vindo, <span class="font-semibold">Diretor Executivo</span></p>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="showUserCreation()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">👥 Gerenciar Usuários</button>
+                <button onclick="logout()"
+                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">Sair</button>
+            </div>
+        </div>
+
+        <!-- Indicadores -->
+        <div class="grid md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-3xl font-bold text-yellow-600">12</div>
+                <div class="text-sm text-gray-600">Pendentes</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-3xl font-bold text-green-600">45</div>
+                <div class="text-sm text-gray-600">Aprovados Hoje</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-3xl font-bold text-red-600">3</div>
+                <div class="text-sm text-gray-600">Reprovados</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-3xl font-bold text-blue-600">87%</div>
+                <div class="text-sm text-gray-600">Taxa Aprovação</div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <div class="grid md:grid-cols-4 gap-4">
+                <select class="px-3 py-2 border border-gray-300 rounded-lg">
+                    <option>Todos os Tipos</option>
+                    <option>Serviços Avulsos</option>
+                    <option>Visitas (V3)</option>
+                    <option>Entregas</option>
+                    <option>Integração</option>
+                    <option>Acesso Antecipado</option>
+                </select>
+                <select class="px-3 py-2 border border-gray-300 rounded-lg">
+                    <option>Todas as Urgências</option>
+                    <option>Emergencial</option>
+                    <option>Alta</option>
+                    <option>Normal</option>
+                </select>
+                <input type="date" class="px-3 py-2 border border-gray-300 rounded-lg">
+                <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">🔍 Filtrar</button>
+            </div>
+        </div>
+
+        <!-- Lista de Agendamentos Pendentes -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b">
+                <h3 class="text-xl font-bold text-gray-800">🔔 Solicitações Pendentes de Aprovação</h3>
+            </div>
+            <div class="divide-y">
+                <!-- Agendamento 1 -->
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <span
+                                    class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium mr-2">🔧
+                                    Serviço Avulso</span>
+                                <span
+                                    class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-medium">EMERGENCIAL</span>
+                            </div>
+                            <h4 class="font-bold text-lg">Manutenção Emergencial - Bomba Principal</h4>
+                            <p class="text-gray-600">Empresa: <strong>TechServ Ltda</strong> | Responsável: João Silva
+                            </p>
+                            <p class="text-gray-600">📅 25/01/2024 | ⏰ 14:00-18:00 | 🚧 Portaria Norte</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="showDetails(1)"
+                                class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">🔍
+                                Detalhes</button>
+                            <button onclick="approveRequest(1)"
+                                class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">👍
+                                Aprovar</button>
+                            <button onclick="rejectRequest(1)"
+                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">👎
+                                Reprovar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agendamento 2 -->
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <span
+                                    class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-medium mr-2">🤝
+                                    Visita V3</span>
+                                <span
+                                    class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium">NORMAL</span>
+                            </div>
+                            <h4 class="font-bold text-lg">Reunião Técnica - Orçamento Equipamentos</h4>
+                            <p class="text-gray-600">Empresa: <strong>Industrial Solutions</strong> | Visitante: Maria
+                                Santos</p>
+                            <p class="text-gray-600">📅 26/01/2024 | ⏰ 09:00-12:00 | 🚧 Portaria Principal</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="showDetails(2)"
+                                class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">🔍
+                                Detalhes</button>
+                            <button onclick="approveRequest(2)"
+                                class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">👍
+                                Aprovar</button>
+                            <button onclick="rejectRequest(2)"
+                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">👎
+                                Reprovar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Solicitante -->
+    <div id="dashboard-solicitante" class="hidden max-w-7xl mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-800 flex items-center">
+                    <span class="text-4xl mr-3">🧑‍💼</span>
+                    Painel do Solicitante
+                </h2>
+                <p class="text-gray-600">Bem-vindo, <span class="font-semibold">Gerente TechServ</span></p>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="showNewRequest()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">🆕 Nova Solicitação</button>
+                <button onclick="logout()"
+                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">Sair</button>
+            </div>
+        </div>
+
+        <!-- Status Cards -->
+        <div class="grid md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-3xl font-bold text-yellow-600">5</div>
+                <div class="text-sm text-gray-600">Pendentes</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-3xl font-bold text-green-600">23</div>
+                <div class="text-sm text-gray-600">Aprovados</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-3xl font-bold text-red-600">2</div>
+                <div class="text-sm text-gray-600">Reprovados</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-3xl font-bold text-gray-600">1</div>
+                <div class="text-sm text-gray-600">Cancelados</div>
+            </div>
+        </div>
+
+        <!-- Minhas Solicitações -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b">
+                <h3 class="text-xl font-bold text-gray-800">📄 Minhas Solicitações</h3>
+            </div>
+            <div class="divide-y">
+                <div class="p-6">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <span
+                                    class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium mr-2">🔧
+                                    Serviço Avulso</span>
+                                <span class="status-pendente px-2 py-1 rounded text-xs font-medium">PENDENTE</span>
+                            </div>
+                            <h4 class="font-bold">Manutenção Emergencial - Bomba Principal</h4>
+                            <p class="text-gray-600 text-sm">Solicitado em: 24/01/2024 às 16:30</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="editRequest(1)"
+                                class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">📝
+                                Editar</button>
+                            <button onclick="cancelRequest(1)"
+                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">❌
+                                Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium mr-2">📦
+                                    Entrega</span>
+                                <span class="status-aprovado px-2 py-1 rounded text-xs font-medium">APROVADO</span>
+                            </div>
+                            <h4 class="font-bold">Entrega de Equipamentos</h4>
+                            <p class="text-gray-600 text-sm">Aprovado em: 23/01/2024 às 10:15</p>
+                            <p class="text-green-600 text-sm font-medium">✅ Autorizado para entrada em 25/01/2024</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Portaria -->
+    <div id="dashboard-portaria" class="hidden max-w-7xl mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-800 flex items-center">
+                    <span class="text-4xl mr-3">🛂</span>
+                    Controle de Portaria
+                </h2>
+                <p class="text-gray-600">Bem-vindo, <span class="font-semibold">Porteiro Chefe</span></p>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="printDayList()"
+                    class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">🖨️ Imprimir Lista</button>
+                <button onclick="logout()"
+                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">Sair</button>
+            </div>
+        </div>
+
+        <!-- Busca Rápida -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <div class="grid md:grid-cols-4 gap-4">
+                <input type="text" id="search-general" placeholder="🔍 Buscar por nome, CPF ou empresa..."
+                    class="md:col-span-2 px-3 py-2 border border-gray-300 rounded-lg">
+                <input type="text" id="search-plate" placeholder="🚗 Buscar por placa..."
+                    class="px-3 py-2 border border-gray-300 rounded-lg">
+                <button onclick="performSearch()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">Buscar</button>
+            </div>
+        </div>
+
+        <!-- Acessos do Dia -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b">
+                <h3 class="text-xl font-bold text-gray-800">📅 Acessos Autorizados - Hoje (25/01/2024)</h3>
+            </div>
+            <div class="divide-y">
+                <div class="p-6">
+                    <div class="flex justify-between items-center">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <span
+                                    class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium mr-2">🔧
+                                    Serviço</span>
+                                <span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-medium">⚠️
+                                    EMERGENCIAL</span>
+                            </div>
+                            <h4 class="font-bold">João Silva - TechServ Ltda</h4>
+                            <p class="text-gray-600 text-sm">CPF: 123.456.789-00 | 📞 (11) 99999-9999</p>
+                            <p class="text-gray-600 text-sm">🚗 Honda Civic - ABC-1234 | ⏰ 14:00-18:00</p>
+                            <p class="text-yellow-600 text-sm font-medium">🛡️ Acompanhamento obrigatório do técnico de
+                                segurança</p>
+                        </div>
+                        <div class="flex flex-col space-y-2">
+                            <button onclick="authorizeEntry('joão')"
+                                class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">✅ Autorizar
+                                Entrada</button>
+                            <button onclick="denyEntry('joão')"
+                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">🚫 Negar
+                                Acesso</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <div class="flex justify-between items-center">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <span
+                                    class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-medium mr-2">🤝
+                                    Visita</span>
+                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">✅
+                                    ENTRADA AUTORIZADA</span>
+                            </div>
+                            <h4 class="font-bold">Maria Santos - Industrial Solutions</h4>
+                            <p class="text-gray-600 text-sm">CPF: 987.654.321-00 | 📞 (11) 88888-8888</p>
+                            <p class="text-gray-600 text-sm">🚗 Toyota Corolla - XYZ-5678 | ⏰ 09:00-12:00</p>
+                            <p class="text-green-600 text-sm font-medium">✅ Entrada autorizada às 08:45</p>
+                        </div>
+                        <div class="text-center">
+                            <span class="bg-green-100 text-green-800 px-3 py-2 rounded font-medium">EM ANDAMENTO</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Nova Solicitação -->
+    <div id="new-request-modal"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-96 overflow-y-auto">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold">🆕 Nova Solicitação de Agendamento</h3>
+                    <button onclick="closeNewRequestModal()" class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+            </div>
+            <div class="p-6">
+                <form id="new-request-form">
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">🏢 Empresa:</label>
+                            <input type="text" id="request-company"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">👤 Responsável:</label>
+                            <input type="text" id="request-responsible"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">📄 CPF:</label>
+                            <input type="text" id="request-cpf" placeholder="000.000.000-00"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">📞 Telefone:</label>
+                            <input type="tel" id="request-phone" placeholder="(11) 99999-9999"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">🎯 Tipo de Agendamento:</label>
+                            <select id="request-type"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required>
+                                <option value="">Selecione o tipo...</option>
+                                <option value="servico">🔧 Serviço Avulso</option>
+                                <option value="visita">🤝 Visita V3</option>
+                                <option value="entrega">📦 Entrega</option>
+                                <option value="integracao">🔗 Integração</option>
+                                <option value="acesso-antecipado">⏰ Acesso Antecipado</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">⚠️ Urgência:</label>
+                            <select id="request-urgency"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required>
+                                <option value="">Selecione a urgência...</option>
+                                <option value="emergencial">🚨 Emergencial</option>
+                                <option value="alta">🔴 Alta</option>
+                                <option value="normal">🟡 Normal</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">📅 Data:</label>
+                            <input type="date" id="request-date"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">⏰ Horário:</label>
+                            <input type="time" id="request-time"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">🚧 Portaria:</label>
+                            <select id="request-gate"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required>
+                                <option value="">Selecione a portaria...</option>
+                                <option value="principal">🏢 Portaria Principal</option>
+                                <option value="norte">🧭 Portaria Norte</option>
+                                <option value="sul">🧭 Portaria Sul</option>
+                                <option value="leste">🧭 Portaria Leste</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">🚗 Placa do Veículo:</label>
+                            <input type="text" id="request-plate" placeholder="ABC-1234"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">📝 Motivo/Descrição:</label>
+                        <textarea id="request-description" rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Descreva detalhadamente o motivo da solicitação..." required></textarea>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">📎 Observações Especiais:</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="obs-refeitorio" class="mr-2">
+                                <span class="text-sm">🍽️ Acesso ao refeitório</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="obs-seguranca" class="mr-2">
+                                <span class="text-sm">🛡️ Acompanhamento obrigatório do técnico de segurança</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="obs-equipamentos" class="mr-2">
+                                <span class="text-sm">🔧 Transporte de equipamentos/ferramentas</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button type="submit" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg">📤
+                            Enviar Solicitação</button>
+                        <button type="button" onclick="closeNewRequestModal()"
+                            class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg">❌ Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Novo Usuário -->
+    <div id="new-user-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold">👥 Criar Novo Usuário</h3>
+                    <button onclick="closeNewUserModal()" class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+            </div>
+            <div class="p-6">
+                <form id="new-user-form">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">👤 Nome Completo:</label>
+                        <input type="text" id="new-user-name"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">📧 E-mail:</label>
+                        <input type="email" id="new-user-email"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">🔒 Senha:</label>
+                        <input type="password" id="new-user-password"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">🎭 Perfil de Acesso:</label>
+                        <select id="new-user-role"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required>
+                            <option value="">Selecione o perfil...</option>
+                            <option value="diretoria">👔 Diretoria</option>
+                            <option value="solicitante">🧑‍💼 Solicitante</option>
+                            <option value="portaria">🛂 Portaria</option>
+                        </select>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button type="submit" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg">✅
+                            Criar Usuário</button>
+                        <button type="button" onclick="closeNewUserModal()"
+                            class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg">❌ Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalhes -->
+    <div id="details-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-96 overflow-y-auto">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold">🔍 Detalhes da Solicitação</h3>
+                    <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="grid md:grid-cols-2 gap-4 text-sm">
+                    <div><strong>Tipo:</strong> Serviço Avulso</div>
+                    <div><strong>Urgência:</strong> Emergencial</div>
+                    <div><strong>Empresa:</strong> TechServ Ltda</div>
+                    <div><strong>Responsável:</strong> João Silva</div>
+                    <div><strong>CPF:</strong> 123.456.789-00</div>
+                    <div><strong>Telefone:</strong> (11) 99999-9999</div>
+                    <div><strong>Data/Hora:</strong> 25/01/2024 14:00-18:00</div>
+                    <div><strong>Portaria:</strong> Norte</div>
+                    <div class="md:col-span-2"><strong>Motivo:</strong> Manutenção emergencial na bomba principal do
+                        setor A</div>
+                </div>
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">💬 Justificativa da Decisão:</label>
+                    <textarea class="w-full px-3 py-2 border border-gray-300 rounded-lg" rows="3"
+                        placeholder="Digite sua justificativa..."></textarea>
+                </div>
+                <div class="flex space-x-3 mt-6">
+                    <button onclick="finalizeApproval()"
+                        class="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg">👍 Aprovar</button>
+                    <button onclick="finalizeRejection()"
+                        class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg">👎 Reprovar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-12">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <p class="text-sm">Design Visual e Site desenvolvido por <strong>Manuela Wendling</strong> | <strong>Full
+                    Arts Design</strong></p>
+        </div>
+    </footer>
+
+    <script>
+        let currentUser = null;
+        let currentRole = null;
+
+        function showLogin(role) {
+            document.getElementById('login-selection').classList.add('hidden');
+            document.getElementById('login-forms').classList.remove('hidden');
+
+            const icons = { admin: '🛡️', diretoria: '👔', solicitante: '🧑‍💼', portaria: '🛂' };
+            const titles = {
+                admin: 'Login Administrativo',
+                diretoria: 'Login Diretoria',
+                solicitante: 'Login Solicitante',
+                portaria: 'Login Portaria'
+            };
+            const subtitles = {
+                admin: 'Acesso Geral do Sistema',
+                diretoria: 'Autorizações e Reprovações',
+                solicitante: 'Empresas e Gerentes',
+                portaria: 'Controle de Acesso'
+            };
+
+            document.getElementById('login-icon').textContent = icons[role];
+            document.getElementById('login-title').textContent = titles[role];
+            document.getElementById('login-subtitle').textContent = subtitles[role];
+
+            currentRole = role;
+        }
+
+        function backToSelection() {
+            document.getElementById('login-forms').classList.add('hidden');
+            document.getElementById('login-selection').classList.remove('hidden');
+            currentRole = null;
+        }
+
+        document.getElementById('login-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // Validação de credenciais
+            const validCredentials = {
+                'karen@adm.com': { password: 'mwf17', role: 'admin', name: 'Karen Administradora' },
+                'joao.diretor@petronas.com': { password: 'dir123', role: 'diretoria', name: 'João Diretor' },
+                'maria.techserv@empresa.com': { password: 'sol123', role: 'solicitante', name: 'Maria Gerente' },
+                'carlos.portaria@petronas.com': { password: 'port123', role: 'portaria', name: 'Carlos Porteiro' }
+            };
+
+            if (validCredentials[username] && validCredentials[username].password === password) {
+                const userRole = validCredentials[username].role;
+
+                // Verificar se o role do login corresponde ao perfil do usuário
+                if (userRole === currentRole) {
+                    currentUser = validCredentials[username].name;
+                    document.getElementById('login-forms').classList.add('hidden');
+                    document.getElementById(`dashboard-${currentRole}`).classList.remove('hidden');
+
+                    showNotification(`✅ Login realizado com sucesso! Bem-vindo, ${currentUser}`, 'success');
+                } else {
+                    showNotification('❌ Usuário não tem permissão para este perfil!', 'error');
+                }
+            } else {
+                showNotification('❌ Credenciais inválidas!', 'error');
+            }
+        });
+
+        function logout() {
+            document.querySelectorAll('[id^="dashboard-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById('login-selection').classList.remove('hidden');
+            currentUser = null;
+            currentRole = null;
+            document.getElementById('login-form').reset();
+            showNotification('👋 Logout realizado com sucesso!', 'info');
+        }
+
+        function showDetails(id) {
+            document.getElementById('details-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('details-modal').classList.add('hidden');
+        }
+
+        function approveRequest(id) {
+            showDetails(id);
+        }
+
+        function rejectRequest(id) {
+            showDetails(id);
+        }
+
+        function finalizeApproval() {
+            closeModal();
+            showNotification('✅ Solicitação aprovada com sucesso!', 'success');
+        }
+
+        function finalizeRejection() {
+            closeModal();
+            showNotification('❌ Solicitação reprovada!', 'error');
+        }
+
+        function showNewRequest() {
+            document.getElementById('new-request-modal').classList.remove('hidden');
+        }
+
+        function closeNewRequestModal() {
+            document.getElementById('new-request-modal').classList.add('hidden');
+            document.getElementById('new-request-form').reset();
+        }
+
+        function authorizeEntry(person) {
+            showNotification(`✅ Entrada autorizada para ${person}!`, 'success');
+        }
+
+        function denyEntry(person) {
+            showNotification(`🚫 Acesso negado para ${person}!`, 'error');
+        }
+
+        function printDayList() {
+            showNotification('🖨️ Preparando lista para impressão...', 'info');
+        }
+
+        function showUserManagement() {
+            showNotification('👥 Seção de gerenciamento de usuários já está visível!', 'info');
+        }
+
+        function showSystemConfig() {
+            showNotification('⚙️ Configurações do sistema em desenvolvimento...', 'info');
+        }
+
+        function showReports() {
+            showNotification('📊 Módulo de relatórios em desenvolvimento...', 'info');
+        }
+
+        function showNewUserForm() {
+            document.getElementById('new-user-modal').classList.remove('hidden');
+        }
+
+        function closeNewUserModal() {
+            document.getElementById('new-user-modal').classList.add('hidden');
+            document.getElementById('new-user-form').reset();
+        }
+
+        function showUserCreation() {
+            document.getElementById('new-user-modal').classList.remove('hidden');
+        }
+
+        function performSearch() {
+            const generalSearch = document.getElementById('search-general').value;
+            const plateSearch = document.getElementById('search-plate').value;
+
+            if (generalSearch || plateSearch) {
+                showNotification(`🔍 Buscando por: ${generalSearch || plateSearch}...`, 'info');
+            } else {
+                showNotification('⚠️ Digite algo para buscar!', 'error');
+            }
+        }
+
+        function editRequest(id) {
+            showNotification('📝 Abrindo formulário de edição...', 'info');
+            document.getElementById('new-request-modal').classList.remove('hidden');
+        }
+
+        function cancelRequest(id) {
+            // Criar modal de confirmação personalizado
+            const confirmDiv = document.createElement('div');
+            confirmDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            confirmDiv.innerHTML = `
+                <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+                    <h3 class="text-lg font-bold mb-4">⚠️ Confirmar Cancelamento</h3>
+                    <p class="text-gray-600 mb-6">Tem certeza que deseja cancelar esta solicitação?</p>
+                    <div class="flex space-x-3">
+                        <button onclick="confirmCancel(${id})" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg">✅ Sim, Cancelar</button>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg">❌ Não</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(confirmDiv);
+        }
+
+        function confirmCancel(id) {
+            document.querySelector('.fixed.inset-0').remove();
+            showNotification('❌ Solicitação cancelada com sucesso!', 'success');
+        }
+
+        // Formulário de criação de usuário
+        document.getElementById('new-user-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const name = document.getElementById('new-user-name').value;
+            const email = document.getElementById('new-user-email').value;
+            const password = document.getElementById('new-user-password').value;
+            const role = document.getElementById('new-user-role').value;
+
+            if (name && email && password && role) {
+                closeNewUserModal();
+                showNotification(`✅ Usuário ${name} criado com sucesso! E-mail: ${email}`, 'success');
+            }
+        });
+
+        // Formulário de nova solicitação
+        document.getElementById('new-request-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const company = document.getElementById('request-company').value;
+            const responsible = document.getElementById('request-responsible').value;
+            const type = document.getElementById('request-type').value;
+            const urgency = document.getElementById('request-urgency').value;
+            const date = document.getElementById('request-date').value;
+
+            if (company && responsible && type && urgency && date) {
+                closeNewRequestModal();
+                showNotification(`✅ Solicitação enviada com sucesso! Empresa: ${company} - Aguardando aprovação da diretoria.`, 'success');
+            }
+        });
+
+        function showNotification(message, type = 'info') {
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                info: 'bg-blue-500'
+            };
+
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    </script>
+    <script>(function () { function c() { var b = a.contentDocument || a.contentWindow.document; if (b) { var d = b.createElement('script'); d.innerHTML = "window.__CF$cv$params={r:'98f09bf817903559',t:'MTc2MDU0NDg2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);"; b.getElementsByTagName('head')[0].appendChild(d) } } if (document.body) { var a = document.createElement('iframe'); a.height = 1; a.width = 1; a.style.position = 'absolute'; a.style.top = 0; a.style.left = 0; a.style.border = 'none'; a.style.visibility = 'hidden'; document.body.appendChild(a); if ('loading' !== document.readyState) c(); else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c); else { var e = document.onreadystatechange || function () { }; document.onreadystatechange = function (b) { e(b); 'loading' !== document.readyState && (document.onreadystatechange = e, c()) } } } })();</script>
+</body>
+
+</html>

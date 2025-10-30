@@ -1,0 +1,4 @@
+﻿# Exemplo de variáveis de ambiente para uso local
+# Copie para .env.local ou .env e preencha com suas credenciais (NÃO COMMITAR)
+SUPABASE_URL="https://seu-projeto.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="<sua-service-role-key-aqui>"

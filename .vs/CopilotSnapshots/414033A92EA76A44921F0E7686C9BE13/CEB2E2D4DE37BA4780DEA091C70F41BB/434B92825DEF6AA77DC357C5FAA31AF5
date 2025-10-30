@@ -1,0 +1,232 @@
+﻿import * as React from 'react';
+import { supabase } from '../lib/supabaseClient';
+
+type UserRole = 'admin' | 'diretoria' | 'solicitante' | 'portaria';
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+}
+
+interface UserRecord {
+  password: string;
+  user: User;
+}
+
+interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  isAuthenticated: boolean;
+  users: UserRecord[];
+  addUser: (name: string, email: string, password: string, role: UserRole) => void;
+  updateUser: (id: string, name: string, email: string, role: UserRole) => void;
+  deleteUser: (id: string) => void;
+  updateUserPassword: (id: string, newPassword: string) => void;
+}
+
+const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
+
+// Load users from localStorage or initialize with default users
+const loadUsers = (): Record<string, UserRecord> => {
+  const stored = localStorage.getItem('petronas_users');
+  if (stored) {
+    return JSON.parse(stored);
+  }
+  
+  // Default users
+  return {
+    'karen@adm.com': {
+      password: 'mwf17',
+      user: { id: '1', email: 'karen@adm.com', name: 'Karen (Admin)', role: 'admin' }
+    },
+    'diretor@petronas.com': {
+      password: 'demo123',
+      user: { id: '2', email: 'diretor@petronas.com', name: 'Diretor', role: 'diretoria' }
+    },
+    'solicitante@petronas.com': {
+      password: 'demo123',
+      user: { id: '3', email: 'solicitante@petronas.com', name: 'Solicitante', role: 'solicitante' }
+    },
+    'portaria@petronas.com': {
+      password: 'demo123',
+      user: { id: '4', email: 'portaria@petronas.com', name: 'Portaria', role: 'portaria' }
+    }
+  };
+};
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = React.useState<User | null>(null);
+  const [userRecords, setUserRecords] = React.useState<Record<string, UserRecord>>({});
+
+  React.useEffect(() => {
+    // Carrega usuários (fallback local) — mas também podemos sincronizar com Supabase
+    const initialUsers = loadUsers();
+    setUserRecords(initialUsers);
+
+    // Tenta restaurar sessão do Supabase
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          // Busca perfil no schema 'profiles' (id = supabase user id)
+          const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+          if (profile) {
+            setUser({ id: profile.id, email: profile.email, name: profile.full_name || profile.email, role: profile.role });
+            localStorage.setItem('petronas_user', JSON.stringify({ id: profile.id, email: profile.email, name: profile.full_name, role: profile.role }));
+          }
+        }
+      } catch (err) {
+        console.warn('Erro ao restaurar sessão Supabase', err);
+      }
+    })();
+
+  }, []);
+
+  // Update localStorage whenever userRecords change
+  React.useEffect(() => {
+    localStorage.setItem('petronas_users', JSON.stringify(userRecords));
+  }, [userRecords]);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    // Primeiro tenta login via Supabase
+    try {
+      const { error, data } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        console.warn('Supabase login error', error);
+        // fallback para local
+      } else if (data?.session) {
+        // Busca perfil
+        const { data: profile } = await supabase.from('profiles').select('*').eq('email', email).single();
+        if (profile) {
+          setUser({ id: profile.id, email: profile.email, name: profile.full_name || profile.email, role: profile.role });
+          localStorage.setItem('petronas_user', JSON.stringify({ id: profile.id, email: profile.email, name: profile.full_name, role: profile.role }));
+          return true;
+        }
+        return false;
+      }
+    } catch (err) {
+      console.warn('Erro login supabase', err);
+    }
+
+    // Fallback local
+    const userRecord = userRecords[email.toLowerCase()];
+    if (userRecord && userRecord.password === password) {
+      setUser(userRecord.user);
+      localStorage.setItem('petronas_user', JSON.stringify(userRecord.user));
+      return true;
+    }
+    return false;
+  };
+
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn('Erro durante signOut', err);
+    }
+    setUser(null);
+    localStorage.removeItem('petronas_user');
+  };
+
+  const addUser = async (name: string, email: string, password: string, role: UserRole) => {
+    // Somente criação local para compatibilidade — idealmente criar usuário no Supabase Auth + profile
+    const id = `user-${Date.now()}`;
+    const newUser: UserRecord = { password, user: { id, email, name, role } };
+    setUserRecords(prev => ({ ...prev, [email.toLowerCase()]: newUser }));
+
+    // Cria usuário no Supabase
+    try {
+      // NOTE: admin.createUser is server-side only; front-end should not call this with service_role key
+      const { error } = await (supabase.auth as any).admin?.createUser ? await (supabase.auth as any).admin.createUser({ email, password, email_confirm: true }) : { error: 'admin.createUser unavailable in client' };
+      if (error) console.warn('Erro criar usuário supabase', error);
+      else {
+        // cria perfil
+        await supabase.from('profiles').upsert({ id: email, email, full_name: name, role });
+      }
+    } catch (err) {
+      console.warn('Erro criando usuário supabase', err);
+    }
+  };
+
+  const updateUser = (id: string, name: string, email: string, role: UserRole) => {
+    setUserRecords(prev => {
+      // Find the existing user by ID
+      const entries = Object.entries(prev);
+      const [oldEmail, oldUserRecord] = entries.find(([_, record]) => record.user.id === id) || ['', null];
+      
+      if (!oldUserRecord) return prev;
+      
+      // Remove the old entry and add a new one with updated email
+      const newEntries = entries.filter(([email]) => email !== oldEmail);
+      const updatedRecord = {
+        ...oldUserRecord,
+        user: { ...oldUserRecord.user, name, email, role }
+      };
+      
+      return {
+        ...Object.fromEntries(newEntries),
+        [email.toLowerCase()]: updatedRecord
+      };
+    });
+  };
+
+  const deleteUser = (id: string) => {
+    setUserRecords(prev => {
+      const entries = Object.entries(prev);
+      const [emailToRemove] = entries.find(([_, record]) => record.user.id === id) || ['', null];
+      
+      if (emailToRemove) {
+        const newEntries = entries.filter(([email]) => email !== emailToRemove);
+        return Object.fromEntries(newEntries);
+      }
+      
+      return prev;
+    });
+  };
+
+  const updateUserPassword = (id: string, newPassword: string) => {
+    setUserRecords(prev => {
+      const entries = Object.entries(prev);
+      const [email, userRecord] = entries.find(([_, record]) => record.user.id === id) || ['', null];
+      
+      if (userRecord) {
+        return {
+          ...prev,
+          [email]: { ...userRecord, password: newPassword }
+        };
+      }
+      
+      return prev;
+    });
+  };
+
+  // Convert userRecords object to array for the context value
+  const users = Object.values(userRecords);
+
+  return (
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      logout, 
+      isAuthenticated: !!user,
+      users,
+      addUser,
+      updateUser,
+      deleteUser,
+      updateUserPassword
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = React.useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}

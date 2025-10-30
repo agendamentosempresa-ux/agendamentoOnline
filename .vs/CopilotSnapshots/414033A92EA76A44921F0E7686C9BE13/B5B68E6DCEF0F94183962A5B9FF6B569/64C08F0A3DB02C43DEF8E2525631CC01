@@ -1,0 +1,182 @@
+﻿import * as React from 'react';
+import { supabase } from '../lib/supabaseClient';
+
+type UserRole = 'admin' | 'diretoria' | 'solicitante' | 'portaria';
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+}
+
+interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  isAuthenticated: boolean;
+  addUser: (name: string, email: string, password: string, role: UserRole) => void;
+  updateUser: (id: string, name: string, email: string, role: UserRole) => void;
+  deleteUser: (id: string) => void;
+  users: Array<{ password?: string; user: User }>;
+}
+
+const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = React.useState<User | null>(null);
+  const [users, setUsers] = React.useState<Array<{ password?: string; user: User }>>([]);
+
+  React.useEffect(() => {
+    // Tenta restaurar sessão do Supabase
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          // Busca perfil no schema 'profiles' (id = supabase user id)
+          const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+          if (profile) {
+            setUser({ id: profile.id, email: profile.email, name: profile.full_name || profile.email, role: profile.role });
+            localStorage.setItem('petronas_user', JSON.stringify({ id: profile.id, email: profile.email, name: profile.full_name, role: profile.role }));
+          }
+        }
+      } catch (err) {
+        console.warn('Erro ao restaurar sessão Supabase', err);
+      }
+    })();
+
+    // Carrega lista de perfis para administração
+    (async () => {
+      try {
+        const { data, error } = await supabase.from('profiles').select('*');
+        if (!error && data) {
+          const mapped = data.map((p: any) => ({ password: '', user: { id: p.id, email: p.email, name: p.full_name || p.email, role: p.role } }));
+          setUsers(mapped);
+        }
+      } catch (err) {
+        console.warn('Erro carregando profiles', err);
+      }
+    })();
+  }, []);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const res = await supabase.auth.signInWithPassword({ email, password });
+      console.log('Supabase signIn result:', res);
+
+      if (res.error) {
+        console.warn('Supabase login error:', res.error);
+        return false;
+      }
+
+      // Success: ensure we have a session or user
+      if (res.data?.session || res.data?.user) {
+        const { data: profileData, error: profileError } = await supabase.from('profiles').select('*').eq('email', email).single();
+        if (profileError) {
+          console.warn('Erro buscando profile após login:', profileError);
+          // still set a minimal user using auth user data
+          const authUser = res.data.user || res.data.session?.user;
+          if (authUser) {
+            setUser({ id: authUser.id, email: authUser.email || email, name: authUser.user_metadata?.full_name || authUser.email || 'Usuário', role: 'solicitante' });
+            localStorage.setItem('petronas_user', JSON.stringify({ id: authUser.id, email: authUser.email, name: authUser.user_metadata?.full_name || authUser.email, role: 'solicitante' }));
+            return true;
+          }
+          return false;
+        }
+
+        const profile = profileData;
+        setUser({ id: profile.id, email: profile.email, name: profile.full_name || profile.email, role: profile.role });
+        localStorage.setItem('petronas_user', JSON.stringify({ id: profile.id, email: profile.email, name: profile.full_name, role: profile.role }));
+        return true;
+      }
+
+      console.warn('Sign-in did not return a session or user object', res);
+    } catch (err) {
+      console.warn('Erro login supabase', err);
+    }
+    return false;
+  };
+
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn('Erro durante signOut', err);
+    }
+    setUser(null);
+    localStorage.removeItem('petronas_user');
+  };
+
+  const addUser = async (name: string, email: string, password: string, role: UserRole) => {
+    try {
+      // tenta criar via signUp (client). Preferível criar via backend/service role.
+      const { error, data } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        console.warn('Erro ao criar usuário no Supabase (signUp):', error);
+      }
+      // Se signUp retornou user em data.user ou se não retornou (varia), tentamos buscar o user id
+      let userId: string | null = null;
+      if (data?.user) userId = data.user.id;
+      // fallback: buscar profile por email após criar
+      const { data: profileSearch } = await supabase.from('profiles').select('id').eq('email', email).single();
+      if (profileSearch?.id) userId = profileSearch.id;
+
+      // Upsert profile
+      const upsertPayload: any = { email, full_name: name, role };
+      if (userId) upsertPayload.id = userId;
+      const { error: upsertErr, data: upsertData } = await supabase.from('profiles').upsert(upsertPayload).select();
+      if (upsertErr) console.warn('Erro upsert profile:', upsertErr);
+      else {
+        // atualizar lista local de users
+        const prof = upsertData && upsertData[0] ? upsertData[0] : null;
+        const newUserRec = { password, user: { id: prof?.id || userId || '', email, name: prof?.full_name || name, role } };
+        setUsers(prev => [...prev, newUserRec]);
+      }
+    } catch (err) {
+      console.warn('Erro criando usuário supabase', err);
+    }
+  };
+
+  const updateUser = async (id: string, name: string, email: string, role: UserRole) => {
+    try {
+      const { error } = await supabase.from('profiles').update({ full_name: name, email, role }).eq('id', id);
+      if (error) console.warn('Erro atualizando profile:', error);
+      setUsers(prev => prev.map(u => u.user.id === id ? { ...u, user: { id, email, name, role } } : u));
+    } catch (err) {
+      console.warn('Erro updateUser', err);
+    }
+  };
+
+  const deleteUser = async (id: string) => {
+    try {
+      const { error } = await supabase.from('profiles').delete().eq('id', id);
+      if (error) console.warn('Erro deletando profile:', error);
+      setUsers(prev => prev.filter(u => u.user.id !== id));
+    } catch (err) {
+      console.warn('Erro deleteUser', err);
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      logout, 
+      isAuthenticated: !!user,
+      addUser,
+      updateUser,
+      deleteUser,
+      users
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = React.useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}

@@ -1,0 +1,147 @@
+﻿import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import type {
+  BaseScheduling,
+  SchedulingType,
+  SchedulingStatus,
+  SchedulingData,
+  CheckInStatus
+} from '@/types/scheduling';
+import { supabase } from '@/lib/supabaseClient';
+
+interface Scheduling extends BaseScheduling {
+  data: SchedulingData;
+}
+
+interface SchedulingContextType {
+  schedulings: Scheduling[];
+  addScheduling: (scheduling: Omit<Scheduling, 'id' | 'createdAt' | 'status' | 'solicitanteId' | 'solicitanteEmail'>) => void;
+  updateStatus: (id: string, status: SchedulingStatus, comment?: string) => void;
+  updateCheckInStatus: (id: string, checkInStatus: 'autorizado' | 'negado' | 'nao-compareceu') => void;
+  getSchedulingsByUser: (userId: string) => Scheduling[];
+  getPendingSchedulings: () => Scheduling[];
+  getApprovedSchedulings: () => Scheduling[];
+}
+
+const SchedulingContext = createContext<SchedulingContextType | undefined>(undefined);
+
+export function SchedulingProvider({ children }: { children: ReactNode }) {
+  const [schedulings, setSchedulings] = useState<Scheduling[]>([]);
+
+  useEffect(() => {
+    // Carrega do Supabase inicialmente
+    (async () => {
+      try {
+        const { data, error } = await supabase.from('schedules').select('*');
+        if (error) {
+          console.warn('Erro carregando schedules do supabase', error);
+          const stored = localStorage.getItem('petronas_schedulings');
+          if (stored) setSchedulings(JSON.parse(stored));
+        } else if (data) {
+          // Mapear campos conforme tipos
+          setSchedulings(data as any);
+        }
+      } catch (err) {
+        console.warn('Erro ao carregar schedules', err);
+        const stored = localStorage.getItem('petronas_schedulings');
+        if (stored) setSchedulings(JSON.parse(stored));
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('petronas_schedulings', JSON.stringify(schedulings));
+  }, [schedulings]);
+
+  const addScheduling = async (scheduling: Omit<Scheduling, 'id' | 'createdAt' | 'status' | 'solicitanteId' | 'solicitanteEmail'>) => {
+    const newScheduling: Scheduling = {
+      ...scheduling,
+      id: crypto.randomUUID(),
+      status: 'pendente',
+      solicitanteId: scheduling.requestedBy,
+      solicitanteEmail: '',
+      createdAt: new Date().toISOString(),
+    };
+
+    // Inserir no Supabase
+    try {
+      const { data, error } = await supabase.from('schedules').insert([{ ...newScheduling }]);
+      if (error) {
+        console.warn('Erro inserindo schedule no supabase', error);
+        setSchedulings(prev => [...prev, newScheduling]);
+      } else {
+        setSchedulings(prev => [...prev, data[0] as any]);
+      }
+    } catch (err) {
+      console.warn('Erro ao inserir schedule', err);
+      setSchedulings(prev => [...prev, newScheduling]);
+    }
+  };
+
+  const updateStatus = async (id: string, status: SchedulingStatus, comment?: string) => {
+    try {
+      const reviewedAt = new Date().toISOString();
+      const { data, error } = await supabase.from('schedules').update({ status, observacoes: comment, reviewedAt }).eq('id', id);
+      if (error) {
+        console.warn('Erro atualizando status no supabase', error);
+        setSchedulings(prev => prev.map(s => s.id === id ? { ...s, status, observacoes: comment, reviewedAt } : s));
+      } else {
+        setSchedulings(prev => prev.map(s => s.id === id ? { ...(data[0] as any) } : s));
+      }
+    } catch (err) {
+      console.warn('Erro updateStatus', err);
+      setSchedulings(prev => prev.map(s => s.id === id ? { ...s, status, observacoes: comment, reviewedAt: new Date().toISOString() } : s));
+    }
+  };
+
+  const updateCheckInStatus = async (id: string, checkInStatus: CheckInStatus) => {
+    try {
+      const checkInAt = new Date().toISOString();
+      const { data, error } = await supabase.from('schedules').update({ checkInStatus, checkInAt }).eq('id', id);
+      if (error) {
+        console.warn('Erro atualizando checkin no supabase', error);
+        setSchedulings(prev => prev.map(s => s.id === id ? { ...s, checkInStatus, checkInAt } : s));
+      } else {
+        setSchedulings(prev => prev.map(s => s.id === id ? { ...(data[0] as any) } : s));
+      }
+    } catch (err) {
+      console.warn('Erro updateCheckInStatus', err);
+      setSchedulings(prev => prev.map(s => s.id === id ? { ...s, checkInStatus, checkInAt: new Date().toISOString() } : s));
+    }
+  };
+
+  const getSchedulingsByUser = (userId: string) => {
+    return schedulings.filter(s => s.requestedBy === userId);
+  };
+
+  const getPendingSchedulings = () => {
+    return schedulings.filter(s => s.status === 'pendente');
+  };
+
+  const getApprovedSchedulings = () => {
+    return schedulings.filter(s => s.status === 'aprovado');
+  };
+
+  return (
+    <SchedulingContext.Provider
+      value={{
+        schedulings,
+        addScheduling,
+        updateStatus,
+        updateCheckInStatus,
+        getSchedulingsByUser,
+        getPendingSchedulings,
+        getApprovedSchedulings,
+      }}
+    >
+      {children}
+    </SchedulingContext.Provider>
+  );
+}
+
+export function useScheduling() {
+  const context = useContext(SchedulingContext);
+  if (context === undefined) {
+    throw new Error('useScheduling must be used within a SchedulingProvider');
+  }
+  return context;
+}

@@ -1,0 +1,585 @@
+﻿import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+// local type for editing user to avoid any
+type EditingUser = { id: string; name?: string; email?: string; role?: string } | null;
+
+const DashboardAdmin = () => {
+  const { user, logout, users, addUser, updateUser, deleteUser } = useAuth();
+  const navigate = useNavigate();
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [showNewUserForm, setShowNewUserForm] = useState(false);
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [showReportsModal, setShowReportsModal] = useState(false);
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: '' });
+  const [editingUser, setEditingUser] = useState<EditingUser>(null);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const renderAdminDashboard = () => (
+    <div id="dashboard-admin" className="max-w-7xl mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-800 flex items-center">
+            <span className="text-4xl mr-3">🛡️</span>
+            Painel Administrativo
+          </h2>
+          <p className="text-gray-600">Bem-vindo, <span className="font-semibold">{user?.name || 'Administrador'}</span></p>
+        </div>
+        <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">Sair</button>
+      </div>
+
+      {/* Menu de Administração */}
+      <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div 
+          className="bg-white rounded-lg shadow-lg p-6 card-hover cursor-pointer border-l-4 border-blue-500 transition-all duration-300 hover:transform hover:-translate-y-1 hover:shadow-xl"
+          onClick={() => setShowUserModal(true)}
+        >
+          <div className="flex items-center">
+            <span className="text-3xl mr-4">👥</span>
+            <div>
+              <h3 className="text-xl font-bold text-gray-800">Gerenciar Usuários</h3>
+              <p className="text-gray-600 text-sm">Criar, editar e remover usuários</p>
+            </div>
+          </div>
+        </div>
+
+        <div 
+          className="bg-white rounded-lg shadow-lg p-6 card-hover cursor-pointer border-l-4 border-green-500 transition-all duration-300 hover:transform hover:-translate-y-1 hover:shadow-xl"
+          onClick={() => setShowConfigModal(true)}
+        >
+          <div className="flex items-center">
+            <span className="text-3xl mr-4">⚙️</span>
+            <div>
+              <h3 className="text-xl font-bold text-gray-800">Configurações</h3>
+              <p className="text-gray-600 text-sm">Parâmetros do sistema</p>
+            </div>
+          </div>
+        </div>
+
+        <div 
+          className="bg-white rounded-lg shadow-lg p-6 card-hover cursor-pointer border-l-4 border-orange-500 transition-all duration-300 hover:transform hover:-translate-y-1 hover:shadow-xl"
+          onClick={() => setShowReportsModal(true)}
+        >
+          <div className="flex items-center">
+            <span className="text-3xl mr-4">📊</span>
+            <div>
+              <h3 className="text-xl font-bold text-gray-800">Relatórios</h3>
+              <p className="text-gray-600 text-sm">Logs e históricos completos</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Estatísticas Gerais */}
+      <div className="grid md:grid-cols-5 gap-4 mb-8">
+        <div className="bg-white rounded-lg shadow p-4 text-center">
+          <div className="text-2xl font-bold text-purple-600">1</div>
+          <div className="text-xs text-gray-600">Administradores</div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4 text-center">
+          <div className="text-2xl font-bold text-red-600">3</div>
+          <div className="text-xs text-gray-600">Diretores</div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4 text-center">
+          <div className="text-2xl font-bold text-blue-600">15</div>
+          <div className="text-xs text-gray-600">Solicitantes</div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4 text-center">
+          <div className="text-2xl font-bold text-green-600">8</div>
+          <div className="text-xs text-gray-600">Portaria</div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4 text-center">
+          <div className="text-2xl font-bold text-yellow-600">127</div>
+          <div className="text-xs text-gray-600">Agendamentos</div>
+        </div>
+      </div>
+
+      {/* Gerenciamento de Usuários */}
+      <div className="bg-white rounded-lg shadow mb-6">
+        <div className="p-6 border-b flex justify-between items-center">
+          <h3 className="text-xl font-bold text-gray-800">👥 Gerenciamento de Usuários</h3>
+          <button 
+            onClick={() => setShowNewUserForm(true)}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">➕ Novo Usuário</button>
+        </div>
+        <div className="p-6">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left">Nome</th>
+                  <th className="px-4 py-2 text-left">E-mail</th>
+                  <th className="px-4 py-2 text-left">Perfil</th>
+                  <th className="px-4 py-2 text-left">Status</th>
+                  <th className="px-4 py-2 text-left">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {(users || []).map((userRecord) => (
+                  <tr key={userRecord.user.id}>
+                    <td className="px-4 py-2">{userRecord.user.name}</td>
+                    <td className="px-4 py-2">{userRecord.user.email}</td>
+                    <td className="px-4 py-2">
+                      <span className={`${
+                        userRecord.user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                        userRecord.user.role === 'diretoria' ? 'bg-red-100 text-red-800' :
+                        userRecord.user.role === 'solicitante' ? 'bg-blue-100 text-blue-800' :
+                        'bg-green-100 text-green-800'
+                      } px-2 py-1 rounded text-xs`}>
+                        {userRecord.user.role === 'admin' ? '🛡️ Admin' :
+                         userRecord.user.role === 'diretoria' ? '👔 Diretoria' :
+                         userRecord.user.role === 'solicitante' ? '🧑‍💼 Solicitante' : '🛂 Portaria'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Ativo</span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <button 
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs mr-1"
+                        onClick={() => {
+                          setEditingUser(userRecord.user);
+                          setNewUser({
+                            name: userRecord.user.name,
+                            email: userRecord.user.email,
+                            password: '',
+                            role: userRecord.user.role
+                          });
+                          setShowNewUserForm(true);
+                        }}
+                      >
+                        ✏️
+                      </button>
+                      <button 
+                        className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs"
+                        onClick={() => {
+                          if (window.confirm(`Tem certeza que deseja excluir o usuário ${userRecord.user.name}?`)) {
+                            deleteUser(userRecord.user.id);
+                          }
+                        }}
+                      >
+                        🗑️
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Logs do Sistema */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6 border-b">
+          <h3 className="text-xl font-bold text-gray-800">📋 Logs Recentes do Sistema</h3>
+        </div>
+        <div className="p-6">
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between items-center p-3 bg-green-50 rounded">
+              <span>✅ Login realizado: joao.diretor@petronas.com</span>
+              <span className="text-gray-500">25/01/2024 14:32</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
+              <span>📝 Agendamento aprovado: TechServ - Manutenção Emergencial</span>
+              <span className="text-gray-500">25/01/2024 14:15</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-yellow-50 rounded">
+              <span>🆕 Novo usuário criado: maria.techserv@empresa.com</span>
+              <span className="text-gray-500">25/01/2024 13:45</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-red-50 rounded">
+              <span>❌ Agendamento reprovado: Visita sem documentação</span>
+              <span className="text-gray-500">25/01/2024 13:20</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Function to render the user management modal
+  const renderUserModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b flex justify-between items-center">
+          <h3 className="text-xl font-bold">👥 Gerenciamento de Usuários</h3>
+          <button 
+            onClick={() => setShowUserModal(false)}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="p-6">
+          <div className="mb-6">
+            <h4 className="text-lg font-bold text-gray-800 mb-4">👥 Gerenciamento de Usuários</h4>
+            <button 
+              onClick={() => setShowNewUserForm(true)}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg mb-4">➕ Novo Usuário</button>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left">Nome</th>
+                  <th className="px-4 py-2 text-left">E-mail</th>
+                  <th className="px-4 py-2 text-left">Perfil</th>
+                  <th className="px-4 py-2 text-left">Status</th>
+                  <th className="px-4 py-2 text-left">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {(users || []).map((userRecord) => (
+                  <tr key={userRecord.user.id}>
+                    <td className="px-4 py-2">{userRecord.user.name}</td>
+                    <td className="px-4 py-2">{userRecord.user.email}</td>
+                    <td className="px-4 py-2">
+                      <span className={`${
+                        userRecord.user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                        userRecord.user.role === 'diretoria' ? 'bg-red-100 text-red-800' :
+                        userRecord.user.role === 'solicitante' ? 'bg-blue-100 text-blue-800' :
+                        'bg-green-100 text-green-800'
+                      } px-2 py-1 rounded text-xs`}>
+                        {userRecord.user.role === 'admin' ? '🛡️ Admin' :
+                         userRecord.user.role === 'diretoria' ? '👔 Diretoria' :
+                         userRecord.user.role === 'solicitante' ? '🧑‍💼 Solicitante' : '🛂 Portaria'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Ativo</span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <button 
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs mr-1"
+                        onClick={() => {
+                          setEditingUser(userRecord.user);
+                          setShowNewUserForm(true);
+                        }}
+                      >
+                        ✏️
+                      </button>
+                      <button 
+                        className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs"
+                        onClick={() => {
+                          if (window.confirm(`Tem certeza que deseja excluir o usuário ${userRecord.user.name}?`)) {
+                            deleteUser(userRecord.user.id);
+                          }
+                        }}
+                      >
+                        🗑️
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Function to render the new user form modal
+  const renderNewUserForm = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div className="p-6 border-b">
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold">{editingUser ? '✏️ Editar Usuário' : '👥 Criar Novo Usuário'}</h3>
+            <button 
+              onClick={() => {
+                setShowNewUserForm(false);
+                setEditingUser(null);
+                setNewUser({ name: '', email: '', password: '', role: '' });
+              }}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        <div className="p-6">
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            
+            if (editingUser) {
+              // Update existing user
+              updateUser(editingUser.id, newUser.name || editingUser.name, newUser.email || editingUser.email, (newUser.role as 'admin' | 'diretoria' | 'solicitante' | 'portaria') || editingUser.role);
+              alert(`Usuário ${newUser.name || editingUser.name} atualizado com sucesso!`);
+            } else {
+              // Add new user
+              addUser(newUser.name, newUser.email, newUser.password, newUser.role as 'admin' | 'diretoria' | 'solicitante' | 'portaria');
+              alert(`Novo usuário criado: ${newUser.name} (${newUser.email})`);
+            }
+            
+            setNewUser({ name: '', email: '', password: '', role: '' });
+            setShowNewUserForm(false);
+            setEditingUser(null);
+          }}>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">👤 Nome Completo:</label>
+              <input 
+                type="text" 
+                value={editingUser ? (newUser.name || editingUser.name) : newUser.name}
+                onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">📧 E-mail:</label>
+              <input 
+                type="email" 
+                value={editingUser ? (newUser.email || editingUser.email) : newUser.email}
+                onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+            {!editingUser && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">🔒 Senha:</label>
+                <input 
+                  type="password" 
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required={!editingUser}
+                />
+              </div>
+            )}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">🎭 Perfil de Acesso:</label>
+              <select 
+                value={editingUser ? (newUser.role || editingUser.role) : newUser.role}
+                onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              >
+                <option value="">Selecione o perfil...</option>
+                <option value="admin">🛡️ Admin</option>
+                <option value="diretoria">👔 Diretoria</option>
+                <option value="solicitante">🧑‍💼 Solicitante</option>
+                <option value="portaria">🛂 Portaria</option>
+              </select>
+            </div>
+            <div className="flex space-x-3">
+              <button 
+                type="submit"
+                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg"
+              >
+                {editingUser ? 'Atualizar Usuário' : '✅ Criar Usuário'}
+              </button>
+              <button 
+                type="button" 
+                onClick={() => {
+                  setShowNewUserForm(false);
+                  setEditingUser(null);
+                  setNewUser({ name: '', email: '', password: '', role: '' });
+                }}
+                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg"
+              >
+                ❌ Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Function to render the config modal
+  const renderConfigModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b flex justify-between items-center">
+          <h3 className="text-xl font-bold">⚙️ Configurações do Sistema</h3>
+          <button 
+            onClick={() => setShowConfigModal(false)}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="p-6">
+          <div className="space-y-4">
+            <div className="p-4 border rounded-lg">
+              <h4 className="font-bold text-lg mb-2">Acesso ao Sistema</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span>Permitir novos registros</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Exigir confirmação de e-mail</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 border rounded-lg">
+              <h4 className="font-bold text-lg mb-2">Notificações</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span>Enviar e-mail para novas solicitações</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Enviar alerta para pendências</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 border rounded-lg">
+              <h4 className="font-bold text-lg mb-2">Segurança</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span>Exigir senha forte</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Registros de atividade</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6 flex justify-end">
+            <button 
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+              onClick={() => alert('Configurações salvas!')}
+            >
+              Salvar Alterações
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Function to render the reports modal
+  const renderReportsModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b flex justify-between items-center">
+          <h3 className="text-xl font-bold">📊 Relatórios e Logs</h3>
+          <button 
+            onClick={() => setShowReportsModal(false)}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="p-6">
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-blue-50 p-4 rounded-lg border">
+              <h4 className="font-bold text-blue-800 mb-2">Acessos Hoje</h4>
+              <div className="text-2xl font-bold text-blue-600">42</div>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg border">
+              <h4 className="font-bold text-green-800 mb-2">Agendamentos</h4>
+              <div className="text-2xl font-bold text-green-600">127</div>
+            </div>
+            <div className="bg-red-50 p-4 rounded-lg border">
+              <h4 className="font-bold text-red-800 mb-2">Pendências</h4>
+              <div className="text-2xl font-bold text-red-600">12</div>
+            </div>
+          </div>
+          
+          <h4 className="text-lg font-bold text-gray-800 mb-4">📋 Logs Recentes do Sistema</h4>
+          <div className="space-y-3 text-sm max-h-96 overflow-y-auto">
+            <div className="flex justify-between items-center p-3 bg-green-50 rounded">
+              <span>✅ Login realizado: joao.diretor@petronas.com</span>
+              <span className="text-gray-500">25/01/2024 14:32</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
+              <span>📝 Agendamento aprovado: TechServ - Manutenção Emergencial</span>
+              <span className="text-gray-500">25/01/2024 14:15</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-yellow-50 rounded">
+              <span>🆕 Novo usuário criado: maria.techserv@empresa.com</span>
+              <span className="text-gray-500">25/01/2024 13:45</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-red-50 rounded">
+              <span>❌ Agendamento reprovado: Visita sem documentação</span>
+              <span className="text-gray-500">25/01/2024 13:20</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-green-50 rounded">
+              <span>✅ Login realizado: maria.solicitante@empresa.com</span>
+              <span className="text-gray-500">25/01/2024 12:10</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
+              <span>📝 Agendamento solicitado: Entrega de equipamentos</span>
+              <span className="text-gray-500">25/01/2024 11:45</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-purple-50 rounded">
+              <span>🔐 Troca de senha: carlos.portaria@petronas.com</span>
+              <span className="text-gray-500">25/01/2024 10:30</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-yellow-50 rounded">
+              <span>⚠️ Acesso negado: CPF não consta na lista</span>
+              <span className="text-gray-500">25/01/2024 09:15</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="gradient-bg bg-gradient-to-br from-blue-800 to-blue-600 text-white py-6">
+        <div className="max-w-6xl mx-auto px-4">
+          <h1 className="text-3xl font-bold text-center mb-2">🏢 Sistema de Agendamentos PETRONAS</h1>
+          <p className="text-center text-blue-100">Gestão Completa de Acessos e Autorizações</p>
+        </div>
+      </div>
+
+      {/* Dashboard Content */}
+      {renderAdminDashboard()}
+
+      {/* Footer */}
+      <footer className="bg-gray-800 text-white py-6 mt-12">
+        <div className="max-w-6xl mx-auto px-4 text-center">
+          <p className="text-sm">Design Visual e Site desenvolvido por <strong>Manuela Wendling</strong> | <strong>Full Arts Design</strong></p>
+        </div>
+      </footer>
+
+      {/* Modals */}
+      {showUserModal && renderUserModal()}
+      {showNewUserForm && renderNewUserForm()}
+      {showConfigModal && renderConfigModal()}
+      {showReportsModal && renderReportsModal()}
+    </div>
+  );
+};
+
+export default DashboardAdmin;

@@ -1,0 +1,186 @@
+﻿import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+type UserRole = 'admin' | 'diretoria' | 'solicitante' | 'portaria';
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+}
+
+interface UserRecord {
+  password: string;
+  user: User;
+}
+
+interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  isAuthenticated: boolean;
+  users: UserRecord[];
+  addUser: (name: string, email: string, password: string, role: UserRole) => void;
+  updateUser: (id: string, name: string, email: string, role: UserRole) => void;
+  deleteUser: (id: string) => void;
+  updateUserPassword: (id: string, newPassword: string) => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Load users from localStorage or initialize with default users
+const loadUsers = (): Record<string, UserRecord> => {
+  const stored = localStorage.getItem('petronas_users');
+  if (stored) {
+    return JSON.parse(stored);
+  }
+  
+  // Default users
+  return {
+    'karen@adm.com': {
+      password: 'mwf17',
+      user: { id: '1', email: 'karen@adm.com', name: 'Karen (Admin)', role: 'admin' }
+    },
+    'diretor@petronas.com': {
+      password: 'demo123',
+      user: { id: '2', email: 'diretor@petronas.com', name: 'Diretor', role: 'diretoria' }
+    },
+    'solicitante@petronas.com': {
+      password: 'demo123',
+      user: { id: '3', email: 'solicitante@petronas.com', name: 'Solicitante', role: 'solicitante' }
+    },
+    'portaria@petronas.com': {
+      password: 'demo123',
+      user: { id: '4', email: 'portaria@petronas.com', name: 'Portaria', role: 'portaria' }
+    }
+  };
+};
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [userRecords, setUserRecords] = useState<Record<string, UserRecord>>({});
+
+  useEffect(() => {
+    const initialUsers = loadUsers();
+    setUserRecords(initialUsers);
+    
+    const storedUser = localStorage.getItem('petronas_user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  // Update localStorage whenever userRecords change
+  useEffect(() => {
+    localStorage.setItem('petronas_users', JSON.stringify(userRecords));
+  }, [userRecords]);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    const userRecord = userRecords[email.toLowerCase()];
+    
+    if (userRecord && userRecord.password === password) {
+      setUser(userRecord.user);
+      localStorage.setItem('petronas_user', JSON.stringify(userRecord.user));
+      return true;
+    }
+    
+    return false;
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('petronas_user');
+  };
+
+  const addUser = (name: string, email: string, password: string, role: UserRole) => {
+    const id = `user-${Date.now()}`;
+    const newUser: UserRecord = {
+      password,
+      user: { id, email, name, role }
+    };
+    
+    setUserRecords(prev => ({
+      ...prev,
+      [email.toLowerCase()]: newUser
+    }));
+  };
+
+  const updateUser = (id: string, name: string, email: string, role: UserRole) => {
+    setUserRecords(prev => {
+      // Find the existing user by ID
+      const entries = Object.entries(prev);
+      const [oldEmail, oldUserRecord] = entries.find(([_, record]) => record.user.id === id) || ['', null];
+      
+      if (!oldUserRecord) return prev;
+      
+      // Remove the old entry and add a new one with updated email
+      const newEntries = entries.filter(([email]) => email !== oldEmail);
+      const updatedRecord = {
+        ...oldUserRecord,
+        user: { ...oldUserRecord.user, name, email, role }
+      };
+      
+      return {
+        ...Object.fromEntries(newEntries),
+        [email.toLowerCase()]: updatedRecord
+      };
+    });
+  };
+
+  const deleteUser = (id: string) => {
+    setUserRecords(prev => {
+      const entries = Object.entries(prev);
+      const [emailToRemove] = entries.find(([_, record]) => record.user.id === id) || ['', null];
+      
+      if (emailToRemove) {
+        const newEntries = entries.filter(([email]) => email !== emailToRemove);
+        return Object.fromEntries(newEntries);
+      }
+      
+      return prev;
+    });
+  };
+
+  const updateUserPassword = (id: string, newPassword: string) => {
+    setUserRecords(prev => {
+      const entries = Object.entries(prev);
+      const [email, userRecord] = entries.find(([_, record]) => record.user.id === id) || ['', null];
+      
+      if (userRecord) {
+        return {
+          ...prev,
+          [email]: { ...userRecord, password: newPassword }
+        };
+      }
+      
+      return prev;
+    });
+  };
+
+  // Convert userRecords object to array for the context value
+  const users = Object.values(userRecords);
+
+  return (
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      logout, 
+      isAuthenticated: !!user,
+      users,
+      addUser,
+      updateUser,
+      deleteUser,
+      updateUserPassword
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}

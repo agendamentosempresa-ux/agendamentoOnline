@@ -1,0 +1,279 @@
+﻿import React, { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '../lib/supabaseClient';
+import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
+
+type UserRole = 'admin' | 'diretoria' | 'solicitante' | 'portaria';
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+}
+
+interface UserRecord {
+  password?: string;
+  user: User;
+}
+
+interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  isAuthenticated: boolean;
+  users: UserRecord[];
+  addUser: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
+  updateUser: (id: string, name: string, email: string, role: UserRole) => Promise<void>;
+  deleteUser: (identifier: string) => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Helper types for shapes returned from admin SDK
+interface SupabaseAdminAuth {
+  admin?: {
+    createUser?: (opts: { email: string; password: string; email_confirm?: boolean }) => Promise<unknown>;
+    deleteUserById?: (id: string) => Promise<unknown>;
+    deleteUser?: (id: string) => Promise<unknown>;
+  };
+}
+
+function extractUserIdFromAdminResult(result: unknown): string | null {
+  if (result && typeof result === 'object') {
+    const r = result as Record<string, unknown>;
+    if ('user' in r && r.user && typeof r.user === 'object') {
+      const u = r.user as Record<string, unknown>;
+      if (typeof u.id === 'string') return u.id;
+      if (typeof u.uid === 'string') return u.uid;
+    }
+    if (typeof r.id === 'string') return r.id;
+  }
+  return null;
+}
+
+export function AuthProviderWrapper() {
+  // placeholder to satisfy tool - real provider implemented below
+  return null as unknown as null;
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<UserRecord[]>([]);
+
+  useEffect(() => {
+    // restore session
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const sessionUser = data?.session?.user as { id: string; email?: string } | undefined;
+        if (sessionUser?.id) {
+          const { data: profile } = await supabase.from('profiles').select('*').eq('id', sessionUser.id).single();
+          if (profile) {
+            setUser({ id: profile.id, email: profile.email, name: profile.full_name || profile.email, role: profile.role });
+          }
+        }
+      } catch (err) {
+        console.warn('Erro restaurando sessão', err);
+      }
+    })();
+
+    // load profiles list
+    (async () => {
+      try {
+        const { data } = await supabase.from('profiles').select('*');
+        if (data) {
+          type ProfileRow = { id: string; email: string; full_name?: string; role?: string };
+          const mapped: UserRecord[] = (data as ProfileRow[]).map((p) => ({ password: '', user: { id: p.id, email: p.email, name: p.full_name || p.email, role: (p.role as UserRole) || 'solicitante' } }));
+          setUsers(mapped);
+        }
+      } catch (err) {
+        console.warn('Erro carregando profiles', err);
+      }
+    })();
+  }, []);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const res = await supabase.auth.signInWithPassword({ email, password });
+      if (res.error) {
+        console.warn('login error', res.error);
+        return false;
+      }
+      const authUser = (res.data?.user || res.data?.session?.user) as { id: string; email?: string; user_metadata?: { full_name?: string } } | undefined;
+      if (!authUser) return false;
+      const { data: profile } = await supabase.from('profiles').select('*').eq('email', email).single();
+      if (profile) {
+        setUser({ id: profile.id, email: profile.email, name: profile.full_name || profile.email, role: profile.role });
+      } else {
+        const name = authUser.user_metadata?.full_name || authUser.email || 'Usuário';
+        setUser({ id: authUser.id, email: authUser.email || email, name, role: 'solicitante' });
+      }
+      return true;
+    } catch (err) {
+      console.warn('Erro login', err);
+      return false;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn('Erro signOut', err);
+    }
+    setUser(null);
+  };
+
+  const addUser = async (name: string, email: string, password: string, role: UserRole) => {
+    try {
+      const SERVICE_ROLE = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY as string | undefined;
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+      let createdId: string | null = null;
+
+      if (SERVICE_ROLE) {
+        try {
+          const admin: SupabaseClient = createSupabaseClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+          const adminAuth = (admin.auth as unknown) as SupabaseAdminAuth;
+
+          if (adminAuth.admin && typeof adminAuth.admin.createUser === 'function') {
+            const result = await adminAuth.admin.createUser({ email, password, email_confirm: true });
+            createdId = extractUserIdFromAdminResult(result);
+          } else {
+            // fallback to REST
+            const resp = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', apikey: SERVICE_ROLE, Authorization: `Bearer ${SERVICE_ROLE}` },
+              body: JSON.stringify({ email, password, email_confirm: true }),
+            });
+            const text = await resp.text();
+            try {
+              const json = text ? JSON.parse(text) : null;
+              createdId = extractUserIdFromAdminResult(json);
+            } catch (e) {
+              console.warn('Failed to parse admin REST response', e);
+            }
+            if (!resp.ok) console.error('admin REST create failed', resp.status, text);
+          }
+
+          if (!createdId) throw new Error('No user id returned from admin create');
+
+          // upsert profile with admin client
+          const { error: profileError } = await admin.from('profiles').upsert({ id: createdId, email, full_name: name, role });
+          if (profileError) {
+            console.error('admin upsert profile error', profileError);
+            throw profileError;
+          }
+
+          console.log(`✅ Usuário ${email} criado como ${role} (id=${createdId})`);
+        } catch (err) {
+          console.error('Erro criando usuário via admin SDK/API', err);
+          alert('Falha ao criar usuário via Admin API/SDK. Verifique console e considere usar o script server-side.');
+        }
+      } else {
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) console.warn('signUp error', error);
+        if (data?.user) createdId = data.user.id;
+      }
+
+      // ensure profiles table has entry (fallback)
+      if (!createdId) {
+        const { data: existing } = await supabase.from('profiles').select('id').eq('email', email).single();
+        type ExistingProfile = { id?: string };
+        if (existing && (existing as ExistingProfile).id) createdId = (existing as ExistingProfile).id as string;
+      }
+
+      type ProfilePayloadFallback = { id?: string; email: string; full_name: string; role: UserRole };
+      const payload: ProfilePayloadFallback = { email, full_name: name, role };
+      if (createdId) payload.id = createdId;
+      const { data: upserted, error: upsertErr } = await supabase.from('profiles').upsert(payload).select();
+      if (upsertErr) {
+        console.warn('profiles upsert error', upsertErr);
+      } else {
+        const prof = upserted && upserted[0] ? upserted[0] : null;
+        const rec: UserRecord = { password, user: { id: prof?.id || createdId || '', email, name: prof?.full_name || name, role } };
+        setUsers((s) => [...s, rec]);
+      }
+    } catch (err) {
+      console.warn('addUser error', err);
+    }
+  };
+
+  const updateUser = async (id: string, name: string, email: string, role: UserRole) => {
+    try {
+      const { error } = await supabase.from('profiles').update({ full_name: name, email, role }).eq('id', id);
+      if (error) console.warn('update profile error', error);
+      setUsers((prev) => prev.map((u) => (u.user.id === id ? { ...u, user: { id, email, name, role } } : u)));
+      if (user?.id === id) setUser({ id, email, name, role });
+    } catch (err) {
+      console.warn('updateUser error', err);
+    }
+  };
+
+  const deleteUser = async (identifier: string) => {
+    try {
+      const SERVICE_ROLE = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY as string | undefined;
+      let targetId: string | null = null;
+      if (identifier.includes('@')) {
+        const { data: profile } = await supabase.from('profiles').select('id').eq('email', identifier).single();
+        type ExistingProfile = { id?: string };
+        if (profile && (profile as ExistingProfile).id) targetId = (profile as ExistingProfile).id as string;
+      } else {
+        targetId = identifier;
+      }
+      if (!targetId) {
+        console.warn('deleteUser: id not resolved');
+        return;
+      }
+      if (SERVICE_ROLE) {
+        try {
+          const admin = createSupabaseClient(import.meta.env.VITE_SUPABASE_URL as string, SERVICE_ROLE, { auth: { persistSession: false } });
+          const adminAuth = (admin.auth as unknown) as SupabaseAdminAuth;
+
+          if (adminAuth.admin && typeof adminAuth.admin.deleteUserById === 'function') {
+            await adminAuth.admin.deleteUserById(targetId);
+          } else if (adminAuth.admin && typeof adminAuth.admin.deleteUser === 'function') {
+            await adminAuth.admin.deleteUser(targetId);
+          } else {
+            const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/admin/users/${targetId}`, {
+              method: 'DELETE',
+              headers: { apikey: SERVICE_ROLE, Authorization: `Bearer ${SERVICE_ROLE}` },
+            });
+            if (!resp.ok) {
+              const text = await resp.text();
+              console.warn('admin delete failed', resp.status, text);
+            }
+          }
+        } catch (err) {
+          console.warn('admin delete error', err);
+        }
+      } else {
+        console.warn('Service role not provided; auth user may not be deleted');
+      }
+      const { error } = await supabase.from('profiles').delete().eq('id', targetId);
+      if (error) console.warn('delete profile error', error);
+      setUsers((prev) => prev.filter((u) => u.user.id !== targetId));
+      if (user?.id === targetId) setUser(null);
+    } catch (err) {
+      console.warn('deleteUser error', err);
+    }
+  };
+
+  const value: AuthContextType = {
+    user,
+    login,
+    logout,
+    isAuthenticated: !!user,
+    users,
+    addUser,
+    updateUser,
+    deleteUser,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+};
