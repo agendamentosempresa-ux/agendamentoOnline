@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 // 1. Definição de Tipos para garantir type-safety e clareza
 type UserRole = 'admin' | 'diretoria' | 'solicitante' | 'portaria';
@@ -22,6 +23,7 @@ type NewUserState = {
 const DashboardAdmin = () => {
   // Assumindo que addUser e deleteUser usam a SERVICE_ROLE_KEY no AuthContext
   const { user, logout, users, addUser, adminAddUser, updateUser, updateUserPassword, deleteUser, fetchUsers, fetchLogs, fetchStatistics, isLoading: isAuthLoading } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   // Mantendo os estados que não são redundantes
@@ -127,6 +129,8 @@ const DashboardAdmin = () => {
         return;
       }
 
+      let successMessage = '';
+      
       if (editingUser) {
         // Lógica de ATUALIZAÇÃO
         // Se uma nova senha foi fornecida, atualizar também a senha
@@ -155,7 +159,7 @@ const DashboardAdmin = () => {
           }
         );
 
-        alert(`Usuário ${newUser.name} atualizado com sucesso!`);
+        successMessage = `Usuário ${newUser.name} atualizado com sucesso!`;
 
       } else {
         // Lógica de CRIAÇÃO
@@ -172,10 +176,16 @@ const DashboardAdmin = () => {
           newUser.role as UserRole
         );
 
-        alert(`Novo usuário criado: ${newUser.name} (${newUser.email})`);
+        successMessage = `Novo usuário criado: ${newUser.name} (${newUser.email})`;
       }
 
-      // Limpar estados
+      // Exibir mensagem de sucesso
+      toast({
+        title: "Sucesso!",
+        description: successMessage,
+      });
+      
+      // Limpar estados e fechar o formulário
       handleCloseNewUserForm();
       
       // Atualizar a lista de usuários em segundo plano
@@ -188,7 +198,11 @@ const DashboardAdmin = () => {
     } catch (error: any) {
       console.error('Erro ao processar usuário:', error);
       // Mensagem de erro mais amigável
-      alert(`Erro: ${error.message?.includes('already exists') ? 'Este e-mail já está em uso.' : error.message || 'Ocorreu um erro desconhecido.'}`);
+      toast({
+        title: "Erro!",
+        description: `Erro: ${error.message?.includes('already exists') ? 'Este e-mail já está em uso.' : error.message || 'Ocorreu um erro desconhecido.'}`,
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
