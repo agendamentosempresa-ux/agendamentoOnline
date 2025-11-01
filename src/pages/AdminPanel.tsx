@@ -52,13 +52,6 @@ export default function AdminPanel() {
     
     loadStats();
   }, [user, fetchStatistics]);
-  
-  // Refresh users data when user changes (login/logout)
-  useEffect(() => {
-    if (user?.role === 'admin') {
-      fetchUsers();
-    }
-  }, [user, fetchUsers]);
 
   if (user?.role !== 'admin') {
     navigate('/dashboard');

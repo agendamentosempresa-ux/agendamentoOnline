@@ -73,13 +73,6 @@ const DashboardAdmin = () => {
     
     loadStats();
   }, [user, fetchStatistics]);
-  
-  // Refresh users data when user changes (login/logout)
-  useEffect(() => {
-    if (user?.role === 'admin' || user?.role === 'diretoria') {
-      fetchUsers();
-    }
-  }, [user, fetchUsers]);
 
   // Inicializa o estado com o tipo correto
   const [newUser, setNewUser] = useState<NewUserState>({ name: '', email: '', password: '', role: '' });
