@@ -250,25 +250,25 @@ const DashboardAdmin = () => {
       <div className="grid md:grid-cols-5 gap-4 mb-8">
         <div className="bg-white rounded-lg shadow p-4 text-center">
           <div className="text-2xl font-bold text-purple-600">
-            {loadingStats ? '...' : users.filter(u => u.user.role === 'admin').length}
+            {loadingStats ? '...' : users.reduce((count, user) => user.user.role === 'admin' ? count + 1 : count, 0)}
           </div>
           <div className="text-xs text-gray-600">Administradores</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4 text-center">
           <div className="text-2xl font-bold text-red-600">
-            {loadingStats ? '...' : users.filter(u => u.user.role === 'diretoria').length}
+            {loadingStats ? '...' : users.reduce((count, user) => user.user.role === 'diretoria' ? count + 1 : count, 0)}
           </div>
           <div className="text-xs text-gray-600">Diretores</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4 text-center">
           <div className="text-2xl font-bold text-blue-600">
-            {loadingStats ? '...' : users.filter(u => u.user.role === 'solicitante').length}
+            {loadingStats ? '...' : users.reduce((count, user) => user.user.role === 'solicitante' ? count + 1 : count, 0)}
           </div>
           <div className="text-xs text-gray-600">Solicitantes</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4 text-center">
           <div className="text-2xl font-bold text-green-600">
-            {loadingStats ? '...' : users.filter(u => u.user.role === 'portaria').length}
+            {loadingStats ? '...' : users.reduce((count, user) => user.user.role === 'portaria' ? count + 1 : count, 0)}
           </div>
           <div className="text-xs text-gray-600">Portaria</div>
         </div>
