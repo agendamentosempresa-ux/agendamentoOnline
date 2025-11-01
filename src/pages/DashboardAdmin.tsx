@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -21,13 +21,54 @@ type NewUserState = {
 
 const DashboardAdmin = () => {
   // Assumindo que addUser e deleteUser usam a SERVICE_ROLE_KEY no AuthContext
-  const { user, logout, users, addUser, adminAddUser, updateUser, deleteUser, isLoading: isAuthLoading } = useAuth();
+  const { user, logout, users, addUser, adminAddUser, updateUser, deleteUser, fetchLogs, fetchStatistics, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
 
   // Mantendo os estados que não são redundantes
   const [showNewUserForm, setShowNewUserForm] = useState(false);
-  const [showConfigModal, setShowConfigModal] = useState(false);
-  const [showReportsModal, setShowReportsModal] = useState(false);
+  const [showReportsModal, setShowReportsModal] = useState(false); // Removed showConfigModal
+  const [logs, setLogs] = useState<any[]>([]);
+  const [statistics, setStatistics] = useState<any>({ accessCount: 0, scheduleCount: 0, pendingCount: 0 });
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [loadingStats, setLoadingStats] = useState(false);
+  
+  // Fetch logs when component mounts and user is admin
+  useEffect(() => {
+    const loadLogs = async () => {
+      if (user?.role === 'admin' || user?.role === 'diretoria') {
+        setLoadingLogs(true);
+        try {
+          const logsData = await fetchLogs(20); // Fetch 20 most recent logs
+          setLogs(logsData);
+        } catch (error) {
+          console.error('Error fetching logs:', error);
+        } finally {
+          setLoadingLogs(false);
+        }
+      }
+    };
+    
+    loadLogs();
+  }, [user, fetchLogs]);
+  
+  // Fetch statistics when component mounts and user is admin
+  useEffect(() => {
+    const loadStats = async () => {
+      if (user?.role === 'admin' || user?.role === 'diretoria') {
+        setLoadingStats(true);
+        try {
+          const statsData = await fetchStatistics();
+          setStatistics(statsData);
+        } catch (error) {
+          console.error('Error fetching statistics:', error);
+        } finally {
+          setLoadingStats(false);
+        }
+      }
+    };
+    
+    loadStats();
+  }, [user, fetchStatistics]);
 
   // Inicializa o estado com o tipo correto
   const [newUser, setNewUser] = useState<NewUserState>({ name: '', email: '', password: '', role: '' });
@@ -154,7 +195,7 @@ const DashboardAdmin = () => {
       </div>
 
       {/* Menu de Administração */}
-      <div className="grid md:grid-cols-3 gap-6 mb-8">
+      <div className="grid md:grid-cols-2 gap-6 mb-8">
         <div
           className="bg-white rounded-lg shadow-lg p-6 card-hover cursor-pointer border-l-4 border-blue-500 transition-all duration-300 hover:transform hover:-translate-y-1 hover:shadow-xl"
           onClick={() => setShowNewUserForm(true)} // Ação: Abrir o formulário de NOVO usuário
@@ -164,19 +205,6 @@ const DashboardAdmin = () => {
             <div>
               <h3 className="text-xl font-bold text-gray-800">Criar Novo Usuário</h3>
               <p className="text-gray-600 text-sm">Adicionar um novo acesso ao sistema</p>
-            </div>
-          </div>
-        </div>
-
-        <div
-          className="bg-white rounded-lg shadow-lg p-6 card-hover cursor-pointer border-l-4 border-green-500 transition-all duration-300 hover:transform hover:-translate-y-1 hover:shadow-xl"
-          onClick={() => setShowConfigModal(true)}
-        >
-          <div className="flex items-center">
-            <span className="text-3xl mr-4">⚙️</span>
-            <div>
-              <h3 className="text-xl font-bold text-gray-800">Configurações</h3>
-              <p className="text-gray-600 text-sm">Parâmetros do sistema</p>
             </div>
           </div>
         </div>
@@ -195,26 +223,36 @@ const DashboardAdmin = () => {
         </div>
       </div>
 
-      {/* Estatísticas Gerais (Mantido) */}
+      {/* Estatísticas Gerais (Atualizado para mostrar estatísticas reais do banco de dados) */}
       <div className="grid md:grid-cols-5 gap-4 mb-8">
         <div className="bg-white rounded-lg shadow p-4 text-center">
-          <div className="text-2xl font-bold text-purple-600">1</div>
+          <div className="text-2xl font-bold text-purple-600">
+            {loadingStats ? '...' : users.filter(u => u.user.role === 'admin').length}
+          </div>
           <div className="text-xs text-gray-600">Administradores</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4 text-center">
-          <div className="text-2xl font-bold text-red-600">3</div>
+          <div className="text-2xl font-bold text-red-600">
+            {loadingStats ? '...' : users.filter(u => u.user.role === 'diretoria').length}
+          </div>
           <div className="text-xs text-gray-600">Diretores</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4 text-center">
-          <div className="text-2xl font-bold text-blue-600">15</div>
+          <div className="text-2xl font-bold text-blue-600">
+            {loadingStats ? '...' : users.filter(u => u.user.role === 'solicitante').length}
+          </div>
           <div className="text-xs text-gray-600">Solicitantes</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4 text-center">
-          <div className="text-2xl font-bold text-green-600">8</div>
+          <div className="text-2xl font-bold text-green-600">
+            {loadingStats ? '...' : users.filter(u => u.user.role === 'portaria').length}
+          </div>
           <div className="text-xs text-gray-600">Portaria</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4 text-center">
-          <div className="text-2xl font-bold text-yellow-600">127</div>
+          <div className="text-2xl font-bold text-yellow-600">
+            {loadingStats ? '...' : statistics.scheduleCount}
+          </div>
           <div className="text-xs text-gray-600">Agendamentos</div>
         </div>
       </div>
@@ -280,30 +318,53 @@ const DashboardAdmin = () => {
         </div>
       </div>
 
-      {/* Logs do Sistema (Mantido) */}
+      {/* Logs do Sistema (Atualizado para mostrar logs reais do banco de dados) */}
       <div className="bg-white rounded-lg shadow">
         <div className="p-6 border-b">
           <h3 className="text-xl font-bold text-gray-800">📋 Logs Recentes do Sistema</h3>
         </div>
         <div className="p-6">
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between items-center p-3 bg-green-50 rounded">
-              <span>✅ Login realizado: joao.diretor@petronas.com</span>
-              <span className="text-gray-500">25/01/2024 14:32</span>
+          {loadingLogs ? (
+            <div className="text-center py-4">Carregando logs...</div>
+          ) : logs.length > 0 ? (
+            <div className="space-y-3 text-sm">
+              {logs.slice(0, 4).map((log, index) => { // Show only first 4 logs
+                // Format the date to show only date and time
+                const date = new Date(log.created_at);
+                const formattedDate = date.toLocaleString('pt-BR');
+                
+                // Determine color based on action type
+                let bgColor = 'bg-gray-50';
+                let icon = 'ℹ️';
+                
+                if (log.action === 'LOGIN') {
+                  bgColor = 'bg-green-50';
+                  icon = '✅';
+                } else if (log.action === 'LOGOUT') {
+                  bgColor = 'bg-yellow-50';
+                  icon = '🚪';
+                } else if (log.action === 'CREATE_USER') {
+                  bgColor = 'bg-blue-50';
+                  icon = '🆕';
+                } else if (log.action === 'UPDATE_USER') {
+                  bgColor = 'bg-purple-50';
+                  icon = '✏️';
+                } else if (log.action === 'DELETE_USER') {
+                  bgColor = 'bg-red-50';
+                  icon = '🗑️';
+                }
+                
+                return (
+                  <div key={log.id || index} className={`flex justify-between items-center p-3 ${bgColor} rounded`}>
+                    <span>{icon} {log.description}</span>
+                    <span className="text-gray-500">{formattedDate}</span>
+                  </div>
+                );
+              })}
             </div>
-            <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
-              <span>📝 Agendamento aprovado: TechServ - Manutenção Emergencial</span>
-              <span className="text-gray-500">25/01/2024 14:15</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-yellow-50 rounded">
-              <span>🆕 Novo usuário criado: maria.techserv@empresa.com</span>
-              <span className="text-gray-500">25/01/2024 13:45</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-red-50 rounded">
-              <span>❌ Agendamento reprovado: Visita sem documentação</span>
-              <span className="text-gray-500">25/01/2024 13:20</span>
-            </div>
-          </div>
+          ) : (
+            <div className="text-center py-4 text-gray-500">Nenhum log encontrado.</div>
+          )}
         </div>
       </div>
     </div>
@@ -399,96 +460,9 @@ const DashboardAdmin = () => {
     </div>
   );
 
-  // renderConfigModal (Mantido, pois a lógica estava OK)
-  const renderConfigModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b flex justify-between items-center">
-          <h3 className="text-xl font-bold">⚙️ Configurações do Sistema</h3>
-          <button
-            onClick={() => setShowConfigModal(false)}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            ✕
-          </button>
-        </div>
-        <div className="p-6">
-          <div className="space-y-4">
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-bold text-lg mb-2">Acesso ao Sistema</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span>Permitir novos registros</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Exigir confirmação de e-mail</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
-                </div>
-              </div>
-            </div>
 
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-bold text-lg mb-2">Notificações</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span>Enviar e-mail para novas solicitações</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Enviar alerta para pendências</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
-                </div>
-              </div>
-            </div>
 
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-bold text-lg mb-2">Segurança</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span>Exigir senha forte</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Registros de atividade</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 flex justify-end">
-            <button
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
-              onClick={() => alert('Configurações salvas!')}
-            >
-              Salvar Alterações
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // renderReportsModal (Mantido, pois a lógica estava OK)
+  // renderReportsModal (Atualizado para mostrar logs reais do banco de dados e estatísticas reais)
   const renderReportsModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -505,52 +479,71 @@ const DashboardAdmin = () => {
           <div className="grid md:grid-cols-3 gap-4 mb-6">
             <div className="bg-blue-50 p-4 rounded-lg border">
               <h4 className="font-bold text-blue-800 mb-2">Acessos Hoje</h4>
-              <div className="text-2xl font-bold text-blue-600">42</div>
+              {loadingStats ? (
+                <div className="text-2xl font-bold text-blue-600">...</div>
+              ) : (
+                <div className="text-2xl font-bold text-blue-600">{statistics.accessCount}</div>
+              )}
             </div>
             <div className="bg-green-50 p-4 rounded-lg border">
               <h4 className="font-bold text-green-800 mb-2">Agendamentos</h4>
-              <div className="text-2xl font-bold text-green-600">127</div>
+              {loadingStats ? (
+                <div className="text-2xl font-bold text-green-600">...</div>
+              ) : (
+                <div className="text-2xl font-bold text-green-600">{statistics.scheduleCount}</div>
+              )}
             </div>
             <div className="bg-red-50 p-4 rounded-lg border">
               <h4 className="font-bold text-red-800 mb-2">Pendências</h4>
-              <div className="text-2xl font-bold text-red-600">12</div>
+              {loadingStats ? (
+                <div className="text-2xl font-bold text-red-600">...</div>
+              ) : (
+                <div className="text-2xl font-bold text-red-600">{statistics.pendingCount}</div>
+              )}
             </div>
           </div>
 
           <h4 className="text-lg font-bold text-gray-800 mb-4">📋 Logs Recentes do Sistema</h4>
           <div className="space-y-3 text-sm max-h-96 overflow-y-auto">
-            <div className="flex justify-between items-center p-3 bg-green-50 rounded">
-              <span>✅ Login realizado: joao.diretor@petronas.com</span>
-              <span className="text-gray-500">25/01/2024 14:32</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
-              <span>📝 Agendamento aprovado: TechServ - Manutenção Emergencial</span>
-              <span className="text-gray-500">25/01/2024 14:15</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-yellow-50 rounded">
-              <span>🆕 Novo usuário criado: maria.techserv@empresa.com</span>
-              <span className="text-gray-500">25/01/2024 13:45</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-red-50 rounded">
-              <span>❌ Agendamento reprovado: Visita sem documentação</span>
-              <span className="text-gray-500">25/01/2024 13:20</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-green-50 rounded">
-              <span>✅ Login realizado: maria.solicitante@empresa.com</span>
-              <span className="text-gray-500">25/01/2024 12:10</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
-              <span>📝 Agendamento solicitado: Entrega de equipamentos</span>
-              <span className="text-gray-500">25/01/2024 11:45</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-purple-50 rounded">
-              <span>🔐 Troca de senha: carlos.portaria@petronas.com</span>
-              <span className="text-gray-500">25/01/2024 10:30</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-yellow-50 rounded">
-              <span>⚠️ Acesso negado: CPF não consta na lista</span>
-              <span className="text-gray-500">25/01/2024 09:15</span>
-            </div>
+            {loadingLogs ? (
+              <div className="text-center py-4">Carregando logs...</div>
+            ) : logs.length > 0 ? (
+              logs.map((log, index) => {
+                // Format the date to show only date and time
+                const date = new Date(log.created_at);
+                const formattedDate = date.toLocaleString('pt-BR');
+                
+                // Determine color based on action type
+                let bgColor = 'bg-gray-50';
+                let icon = 'ℹ️';
+                
+                if (log.action === 'LOGIN') {
+                  bgColor = 'bg-green-50';
+                  icon = '✅';
+                } else if (log.action === 'LOGOUT') {
+                  bgColor = 'bg-yellow-50';
+                  icon = '🚪';
+                } else if (log.action === 'CREATE_USER') {
+                  bgColor = 'bg-blue-50';
+                  icon = '🆕';
+                } else if (log.action === 'UPDATE_USER') {
+                  bgColor = 'bg-purple-50';
+                  icon = '✏️';
+                } else if (log.action === 'DELETE_USER') {
+                  bgColor = 'bg-red-50';
+                  icon = '🗑️';
+                }
+                
+                return (
+                  <div key={log.id || index} className={`flex justify-between items-center p-3 ${bgColor} rounded`}>
+                    <span>{icon} {log.description}</span>
+                    <span className="text-gray-500">{formattedDate}</span>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-4 text-gray-500">Nenhum log encontrado.</div>
+            )}
           </div>
         </div>
       </div>
@@ -580,7 +573,6 @@ const DashboardAdmin = () => {
       {/* Modals */}
       {/* 8. REMOÇÃO DE MODAL REDUNDANTE: renderUserModal foi removido. */}
       {showNewUserForm && renderNewUserForm()}
-      {showConfigModal && renderConfigModal()}
       {showReportsModal && renderReportsModal()}
     </div>
   );

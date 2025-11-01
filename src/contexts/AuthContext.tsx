@@ -17,6 +17,22 @@ interface AuthUser {
   role: UserRole;
 }
 
+interface LogRecord {
+  id: string;
+  user_name: string;
+  user_email: string;
+  user_role: UserRole;
+  action: string;
+  description: string;
+  created_at: string;
+}
+
+interface Statistics {
+  accessCount: number;
+  scheduleCount: number;
+  pendingCount: number;
+}
+
 interface AuthContextType {
   user: AuthUser | null;
   users: UserRecord[];
@@ -31,6 +47,8 @@ interface AuthContextType {
   updateUser: (id: string, updates: { name?: string, email?: string, role?: UserRole }) => Promise<void>;
   addUser: (name: string, email: string, password: string, role: UserRole) => Promise<void>; // Registro normal
   fetchUsers: () => Promise<void>; // Recarregar lista
+  fetchLogs: (limit?: number) => Promise<LogRecord[]>; // Fetch logs
+  fetchStatistics: () => Promise<Statistics>; // Fetch statistics
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -172,6 +190,89 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Function to fetch logs
+  const fetchLogs = async (limit: number = 50) => {
+    try {
+      let query = supabase
+        .from('logs')
+        .select(`
+          id,
+          action,
+          description,
+          created_at,
+          profiles!inner (
+            full_name,
+            email,
+            role
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Erro ao buscar logs:', error);
+        return [];
+      }
+
+      // Format the logs data
+      return data.map(log => ({
+        id: log.id,
+        user_name: log.profiles.full_name,
+        user_email: log.profiles.email,
+        user_role: log.profiles.role,
+        action: log.action,
+        description: log.description,
+        created_at: log.created_at
+      }));
+    } catch (error) {
+      console.error('Unexpected error during fetchLogs:', error);
+      return [];
+    }
+  };
+
+  // Function to fetch statistics
+  const fetchStatistics = async () => {
+    try {
+      // Get the number of users who logged in today
+      const today = new Date().toISOString().split('T')[0];
+      const { count: accessCount, error: accessError } = await supabase
+        .from('logs')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', `${today}T00:00:00`)
+        .eq('action', 'LOGIN');
+
+      // Get the total number of schedules
+      const { count: scheduleCount, error: scheduleError } = await supabase
+        .from('schedules')
+        .select('*', { count: 'exact', head: true });
+
+      // Get the number of pending schedules
+      const { count: pendingCount, error: pendingError } = await supabase
+        .from('schedules')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pendente');
+
+      if (accessError) console.error('Error fetching access count:', accessError);
+      if (scheduleError) console.error('Error fetching schedule count:', scheduleError);
+      if (pendingError) console.error('Error fetching pending count:', pendingError);
+
+      return {
+        accessCount: accessCount || 0,
+        scheduleCount: scheduleCount || 0,
+        pendingCount: pendingCount || 0
+      };
+    } catch (error) {
+      console.error('Unexpected error during fetchStatistics:', error);
+      return {
+        accessCount: 0,
+        scheduleCount: 0,
+        pendingCount: 0
+      };
+    }
+  };
+
   /* FUNÇÕES DE GESTÃO DE USUÁRIOS (ADMIN E NORMAL) */
 
   // REGISTRO NORMAL (para Register.tsx)
@@ -244,6 +345,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Recarrega a lista para atualizar a tabela do AdminPanel
       await fetchUsers();
+      
+      // Log the user creation activity
+      if (user) {
+        await logActivity(user.id, 'CREATE_USER', `Admin ${user.name} created new user: ${name} with role ${role}`);
+      }
     } catch (error: any) {
       console.error('Erro inesperado na criação de usuário admin:', error);
       throw error;
@@ -277,6 +383,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw error;
     }
 
+    // Log the user deletion activity
+    if (user) {
+      await logActivity(user.id, 'DELETE_USER', `User ${user.name} deleted user ID: ${id}`);
+    }
+    
     // Se for o próprio admin se deletando (não deveria acontecer), ou se deletar da lista
     if (user && user.id === id) {
       setUser(null);
@@ -305,6 +416,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Recarrega a lista
     await fetchUsers();
+    
+    // Log the user update activity
+    if (user) {
+      await logActivity(user.id, 'UPDATE_USER', `User ${user.name} updated profile for user ID: ${id}`);
+    }
   };
 
   /* FUNÇÕES DE AUTENTICAÇÃO PADRÃO */
@@ -331,6 +447,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.log('Login successful, user:', authUser);
           setUser(authUser);
           
+          // Log the login activity
+          await logActivity(authUser.id, 'LOGIN', `User ${authUser.name} logged in successfully`);
+          
           // Wait a brief moment to ensure state propagates before navigation
           await new Promise(resolve => setTimeout(resolve, 200));
           
@@ -354,7 +473,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Function to log user activities
+  const logActivity = async (userId: string | null, action: string, description: string) => {
+    try {
+      // Get the real IP address and user agent if possible
+      // For now, we'll use placeholder values, but in a real app you might want to get this from a server endpoint
+      const { error } = await supabase
+        .from('logs')
+        .insert([{
+          user_id: userId,
+          action,
+          description,
+          ip_address: 'CLIENT_IP', // In a real app, get from server
+          user_agent: navigator.userAgent
+        }]);
+      
+      if (error) {
+        console.error('Error logging activity:', error);
+      }
+    } catch (error) {
+      console.error('Unexpected error in logActivity:', error);
+    }
+  };
+
   const logout = async () => {
+    if (user) {
+      await logActivity(user.id, 'LOGOUT', `User ${user.name} logged out`);
+    }
     const { error } = await supabase.auth.signOut();
     if (error) console.error(error);
     setUser(null);
@@ -440,6 +585,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     deleteUser,
     addUser,
     fetchUsers,
+    fetchLogs,
+    fetchStatistics,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

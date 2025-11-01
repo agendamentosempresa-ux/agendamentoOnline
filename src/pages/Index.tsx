@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 
 // ✅ Import da imagem (ajuste conforme o caminho real)
-import Logo from '@/assets/petronas.png';
+import Logo from '@/assets/logo.jpg';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -33,7 +33,6 @@ const Index = () => {
         </div>
 
         <h1 className="text-5xl font-bold mb-4">Sistema de Agendamentos</h1>
-        <h2 className="text-2xl mb-6 opacity-90">PETRONAS</h2>
         <p className="text-xl mb-8 opacity-80">
           Gerencie agendamentos de serviços, visitas, entregas e treinamentos
         </p>

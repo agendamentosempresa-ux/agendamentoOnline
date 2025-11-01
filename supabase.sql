@@ -1,6 +1,6 @@
--- SQL para criar esquema básico no Supabase
+-- SQL para criar esquema bsico no Supabase
 
--- tabela profiles para gerenciamento de usuários
+-- tabela profiles para gerenciamento de usurios
 create table if not exists profiles (
   id uuid primary key default gen_random_uuid(),
   email text unique not null,
@@ -9,7 +9,7 @@ create table if not exists profiles (
   created_at timestamptz default now()
 );
 
--- tabela schedules para solicitações
+-- tabela schedules para solicitaes
 create table if not exists schedules (
   id uuid primary key default gen_random_uuid(),
   type text not null,
@@ -25,13 +25,21 @@ create table if not exists schedules (
   check_in_at timestamptz
 );
 
--- índices úteis
+-- tabela logs para rastreamento de atividades
+create table if not exists logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references profiles(id) on delete set null,
+  action text not null,
+  description text,
+  ip_address text,
+  user_agent text,
+  created_at timestamptz default now()
+);
+
+-- ndices teis
 create index if not exists idx_schedules_status on schedules(status);
 create index if not exists idx_schedules_requested_by on schedules(requested_by);
 create index if not exists idx_schedules_created_at on schedules(created_at);
-
--- inserir usuário inicial (karen) com role admin
--- ATENÇÃO: para criar usuário do Supabase Auth é preciso usar a API Admin do Supabase; aqui criamos apenas o profile
-insert into profiles (email, full_name, role) values ('karen@adm.com', 'Karen (Admin)', 'admin') on conflict (email) do nothing;
-
--- Observação: crie a conta no Auth do Supabase com o email e senha mwf17 usando o painel ou a API Admin.
+create index if not exists idx_logs_user_id on logs(user_id);
+create index if not exists idx_logs_action on logs(action);
+create index if not exists idx_logs_created_at on logs(created_at);

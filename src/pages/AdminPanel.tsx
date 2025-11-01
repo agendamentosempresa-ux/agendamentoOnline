@@ -1,11 +1,53 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function AdminPanel() {
-  const { user, logout, users, deleteUser } = useAuth();
+  const { user, logout, users, deleteUser, fetchLogs, fetchStatistics } = useAuth();
   const navigate = useNavigate();
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [logs, setLogs] = useState<any[]>([]);
+  const [statistics, setStatistics] = useState<any>({ accessCount: 0, scheduleCount: 0, pendingCount: 0 });
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [loadingStats, setLoadingStats] = useState(false);
+  
+  // Fetch logs when component mounts and user is admin
+  useEffect(() => {
+    const loadLogs = async () => {
+      if (user?.role === 'admin') {
+        setLoadingLogs(true);
+        try {
+          const logsData = await fetchLogs(20); // Fetch 20 most recent logs
+          setLogs(logsData);
+        } catch (error) {
+          console.error('Error fetching logs:', error);
+        } finally {
+          setLoadingLogs(false);
+        }
+      }
+    };
+    
+    loadLogs();
+  }, [user, fetchLogs]);
+  
+  // Fetch statistics when component mounts and user is admin
+  useEffect(() => {
+    const loadStats = async () => {
+      if (user?.role === 'admin') {
+        setLoadingStats(true);
+        try {
+          const statsData = await fetchStatistics();
+          setStatistics(statsData);
+        } catch (error) {
+          console.error('Error fetching statistics:', error);
+        } finally {
+          setLoadingStats(false);
+        }
+      }
+    };
+    
+    loadStats();
+  }, [user, fetchStatistics]);
 
   if (user?.role !== 'admin') {
     navigate('/dashboard');
@@ -62,23 +104,13 @@ export default function AdminPanel() {
         </div>
 
         {/* Menu de Administração */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-lg p-6 card-hover cursor-pointer border-l-4 border-blue-500">
             <div className="flex items-center">
               <span className="text-3xl mr-4">👥</span>
               <div>
                 <h3 className="text-xl font-bold text-gray-800">Gerenciar Usuários</h3>
                 <p className="text-gray-600 text-sm">Criar, editar e remover usuários</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-lg p-6 card-hover cursor-pointer border-l-4 border-green-500">
-            <div className="flex items-center">
-              <span className="text-3xl mr-4">⚙️</span>
-              <div>
-                <h3 className="text-xl font-bold text-gray-800">Configurações</h3>
-                <p className="text-gray-600 text-sm">Parâmetros do sistema</p>
               </div>
             </div>
           </div>
@@ -94,26 +126,36 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        {/* Estatísticas Gerais */}
+        {/* Estatísticas Gerais (Atualizado para mostrar estatísticas reais do banco de dados) */}
         <div className="grid md:grid-cols-5 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow p-4 text-center">
-            <div className="text-2xl font-bold text-purple-600">1</div>
+            <div className="text-2xl font-bold text-purple-600">
+              {loadingStats ? '...' : users.filter(u => u.user.role === 'admin').length}
+            </div>
             <div className="text-xs text-gray-600">Administradores</div>
           </div>
           <div className="bg-white rounded-lg shadow p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">3</div>
+            <div className="text-2xl font-bold text-red-600">
+              {loadingStats ? '...' : users.filter(u => u.user.role === 'diretoria').length}
+            </div>
             <div className="text-xs text-gray-600">Diretores</div>
           </div>
           <div className="bg-white rounded-lg shadow p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">15</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {loadingStats ? '...' : users.filter(u => u.user.role === 'solicitante').length}
+            </div>
             <div className="text-xs text-gray-600">Solicitantes</div>
           </div>
           <div className="bg-white rounded-lg shadow p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">8</div>
+            <div className="text-2xl font-bold text-green-600">
+              {loadingStats ? '...' : users.filter(u => u.user.role === 'portaria').length}
+            </div>
             <div className="text-xs text-gray-600">Portaria</div>
           </div>
           <div className="bg-white rounded-lg shadow p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">127</div>
+            <div className="text-2xl font-bold text-yellow-600">
+              {loadingStats ? '...' : statistics.scheduleCount}
+            </div>
             <div className="text-xs text-gray-600">Agendamentos</div>
           </div>
         </div>
