@@ -173,21 +173,18 @@ const DashboardAdmin = () => {
         );
 
         alert(`Novo usuário criado: ${newUser.name} (${newUser.email})`);
-        
-        // Refresh the users list to show the new user
-        await fetchUsers();
       }
 
       // Limpar estados
       handleCloseNewUserForm();
-      // Refresh the users list to show the new user
+      // Refresh the users list to show the new or updated user
       await fetchUsers();
 
-    } catch (error: any) {
-      console.error('Erro ao processar usuário:', error);
-      // Mensagem de erro mais amigável
-      alert(`Erro: ${error.message?.includes('already exists') ? 'Este e-mail já está em uso.' : error.message || 'Ocorreu um erro desconhecido.'}`);
     } finally {
+      // Atualizar a lista de usuários após operação (com ou sem sucesso)
+      fetchUsers().catch(fetchError => {
+        console.error('Erro ao atualizar lista de usuários:', fetchError);
+      });
       setIsSubmitting(false);
     }
   };
