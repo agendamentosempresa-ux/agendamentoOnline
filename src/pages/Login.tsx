@@ -8,7 +8,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loginAttempted, setLoginAttempted] = useState(false);
-  const { login, user, fetchUsers } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -33,10 +33,6 @@ const Login = () => {
         // Set login as attempted and let useEffect handle navigation
         setLoginAttempted(true);
         
-        // If user is admin or diretoria, refresh users data
-        if (user?.role === 'admin' || user?.role === 'diretoria') {
-          await fetchUsers();
-        }
       } else {
         toast({
           title: "Erro ao fazer login",
@@ -60,11 +56,8 @@ const Login = () => {
   useEffect(() => {
     if (loginAttempted && user) {
       console.log('User authenticated, navigating to dashboard...');
-      // Add a small delay to ensure data is loaded
-      setTimeout(() => {
-        navigate('/dashboard');
-        setLoginAttempted(false); // Reset to prevent multiple navigations
-      }, 300); // 300ms delay to allow data to load
+      navigate('/dashboard');
+      setLoginAttempted(false); // Reset to prevent multiple navigations
     }
   }, [loginAttempted, user, navigate]);
 

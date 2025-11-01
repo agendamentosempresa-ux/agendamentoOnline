@@ -590,6 +590,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Log the login activity
           await logActivity(authUser.id, 'LOGIN', `User ${authUser.name} logged in successfully`);
           
+          // Immediately fetch users data if user is admin or diretoria
+          if (authUser.role === 'admin' || authUser.role === 'diretoria') {
+            await fetchUsers();
+          }
+          
           // Wait a brief moment to ensure state propagates before navigation
           await new Promise(resolve => setTimeout(resolve, 200));
           
