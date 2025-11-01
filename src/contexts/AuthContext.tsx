@@ -46,6 +46,7 @@ interface AuthContextType {
   fetchUsers: () => Promise<void>; // Recarregar lista
   fetchLogs: (limit?: number) => Promise<LogRecord[]>; // Fetch logs
   fetchStatistics: () => Promise<Statistics>; // Fetch statistics
+  updateUserPassword: (id: string, newPassword: string) => Promise<void>; // Update user password
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -538,6 +539,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // ATUALIZAÇÃO DE SENHA (usada em DashboardAdmin para alterar senha)
+  const updateUserPassword = async (id: string, newPassword: string) => {
+    if (!supabaseAdmin) throw new Error('Cliente Admin não configurado. Verifique a SERVICE_ROLE_KEY.');
+    if (!newPassword || newPassword.length < 6) throw new Error('A senha deve ter pelo menos 6 caracteres.');
+
+    try {
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(id, {
+        password: newPassword
+      });
+      
+      if (error) {
+        console.error('Erro ao atualizar senha:', error);
+        throw error;
+      }
+
+      // Log the password change activity
+      if (user) {
+        const { data: targetUser, error: userError } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', id)
+          .single();
+
+        if (!userError && targetUser) {
+          await logActivity(user.id, 'UPDATE_PASSWORD', `Admin ${user.name} updated password for user ${targetUser.full_name}`);
+        }
+      }
+    } catch (error) {
+      console.error('Erro inesperado ao atualizar senha:', error);
+      throw error;
+    }
+  };
+
   /* FUNÇÕES DE AUTENTICAÇÃO PADRÃO */
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -682,6 +716,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     logout,
     adminAddUser,
     updateUser,
+    updateUserPassword,
     deleteUser,
     addUser,
     fetchUsers,

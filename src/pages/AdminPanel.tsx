@@ -54,13 +54,19 @@ export default function AdminPanel() {
     return null;
   }
 
-  const handleDeleteUser = (id: string) => {
+  const handleDeleteUser = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este usuário?')) {
-      deleteUser(id);
+      try {
+        await deleteUser(id);
+        // Atualizar a lista de usuários após exclusão
+        await fetchUsers();
+      } catch (error) {
+        console.error('Erro ao deletar usuário:', error);
+      }
     }
   };
 
-  const handleDeleteAll = () => {
+  const handleDeleteAll = async () => {
     if (confirmPassword !== 'mwf17') {
       alert('Senha incorreta!');
       return;
@@ -71,9 +77,20 @@ export default function AdminPanel() {
       .filter(u => u.user.id !== user.id) // Don't delete the current admin
       .map(u => u.user.id);
     
-    userIds.forEach(id => deleteUser(id));
-    alert('Todos os usuários de teste foram removidos!');
-    setConfirmPassword('');
+    try {
+      // Delete each user
+      for (const id of userIds) {
+        await deleteUser(id);
+      }
+      
+      // Atualizar a lista de usuários após exclusão
+      await fetchUsers();
+      alert('Todos os usuários de teste foram removidos!');
+      setConfirmPassword('');
+    } catch (error) {
+      console.error('Erro ao deletar usuários:', error);
+      alert('Ocorreu um erro ao deletar os usuários');
+    }
   };
 
   const handleLogout = () => {
