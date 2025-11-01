@@ -45,6 +45,8 @@ const DashboardAdmin = () => {
         } finally {
           setLoadingLogs(false);
         }
+      } else {
+        setLogs([]); // Clear logs if not admin/diretoria
       }
     };
     
@@ -64,11 +66,20 @@ const DashboardAdmin = () => {
         } finally {
           setLoadingStats(false);
         }
+      } else {
+        setStatistics({ accessCount: 0, scheduleCount: 0, pendingCount: 0 }); // Reset stats if not admin/diretoria
       }
     };
     
     loadStats();
   }, [user, fetchStatistics]);
+  
+  // Refresh users data when user changes (login/logout)
+  useEffect(() => {
+    if (user?.role === 'admin' || user?.role === 'diretoria') {
+      fetchUsers();
+    }
+  }, [user, fetchUsers]);
 
   // Inicializa o estado com o tipo correto
   const [newUser, setNewUser] = useState<NewUserState>({ name: '', email: '', password: '', role: '' });

@@ -24,6 +24,8 @@ export default function AdminPanel() {
         } finally {
           setLoadingLogs(false);
         }
+      } else {
+        setLogs([]); // Clear logs if not admin
       }
     };
     
@@ -43,11 +45,20 @@ export default function AdminPanel() {
         } finally {
           setLoadingStats(false);
         }
+      } else {
+        setStatistics({ accessCount: 0, scheduleCount: 0, pendingCount: 0 }); // Reset stats if not admin
       }
     };
     
     loadStats();
   }, [user, fetchStatistics]);
+  
+  // Refresh users data when user changes (login/logout)
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      fetchUsers();
+    }
+  }, [user, fetchUsers]);
 
   if (user?.role !== 'admin') {
     navigate('/dashboard');
