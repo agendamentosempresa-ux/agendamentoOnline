@@ -52,6 +52,16 @@ export default function AdminPanel() {
     
     loadStats();
   }, [user, fetchStatistics]);
+  
+  // Force refresh users data when component mounts and user is admin
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      const timer = setTimeout(() => {
+        fetchUsers();
+      }, 500); // Pequeno atraso para garantir que o estado esteja sincronizado
+      return () => clearTimeout(timer);
+    }
+  }, [user, fetchUsers]);
 
   if (user?.role !== 'admin') {
     navigate('/dashboard');

@@ -73,6 +73,16 @@ const DashboardAdmin = () => {
     
     loadStats();
   }, [user, fetchStatistics]);
+  
+  // Force refresh users data when component mounts and user is admin/diretoria
+  useEffect(() => {
+    if (user?.role === 'admin' || user?.role === 'diretoria') {
+      const timer = setTimeout(() => {
+        fetchUsers();
+      }, 500); // Pequeno atraso para garantir que o estado esteja sincronizado
+      return () => clearTimeout(timer);
+    }
+  }, [user, fetchUsers]);
 
   // Inicializa o estado com o tipo correto
   const [newUser, setNewUser] = useState<NewUserState>({ name: '', email: '', password: '', role: '' });
