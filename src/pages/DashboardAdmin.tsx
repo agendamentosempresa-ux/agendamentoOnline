@@ -177,14 +177,17 @@ const DashboardAdmin = () => {
 
       // Limpar estados
       handleCloseNewUserForm();
-      // Refresh the users list to show the new or updated user
-      await fetchUsers();
-
-    } finally {
-      // Atualizar a lista de usuários após operação (com ou sem sucesso)
+      
+      // Atualizar a lista de usuários em segundo plano
       fetchUsers().catch(fetchError => {
         console.error('Erro ao atualizar lista de usuários:', fetchError);
       });
+
+    } catch (error: any) {
+      console.error('Erro ao processar usuário:', error);
+      // Mensagem de erro mais amigável
+      alert(`Erro: ${error.message?.includes('already exists') ? 'Este e-mail já está em uso.' : error.message || 'Ocorreu um erro desconhecido.'}`);
+    } finally {
       setIsSubmitting(false);
     }
   };
