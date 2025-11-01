@@ -169,6 +169,9 @@ const DashboardAdmin = () => {
         );
 
         alert(`Novo usuário criado: ${newUser.name} (${newUser.email})`);
+        
+        // Refresh the users list to show the new user
+        await fetchUsers();
       }
 
       // Limpar estados

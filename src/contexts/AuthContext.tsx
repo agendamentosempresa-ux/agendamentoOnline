@@ -447,15 +447,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error(`Erro de perfil: ${profileError.message}`);
       }
 
-      // Recarrega a lista para atualizar a tabela do AdminPanel
-      if (user && (user.role === 'admin' || user.role === 'diretoria')) {
-        try {
-          await fetchUsers();
-        } catch (fetchError) {
-          console.error('Erro ao atualizar lista de usuários após criação:', fetchError);
-        }
-      }
-      
       // Log the user creation activity
       if (user) {
         try {
