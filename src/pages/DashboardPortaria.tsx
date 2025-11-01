@@ -234,7 +234,7 @@ const DashboardPortaria = () => {
         {/* Header - CLASSE: no-print */}
         <div className="gradient-bg bg-gradient-to-br from-blue-800 to-blue-600 text-white py-6 no-print">
           <div className="max-w-6xl mx-auto px-4">
-            <h1 className="text-3xl font-bold text-center mb-2">🏢 Sistema de Agendamentos PETRONAS</h1>
+            <h1 className="text-3xl font-bold text-center mb-2">🏢 Sistema de Agendamentos </h1>
             <p className="text-center text-blue-100">Gestão Completa de Acessos e Autorizações</p>
           </div>
         </div>
@@ -289,7 +289,7 @@ const DashboardPortaria = () => {
 
             {/* Cabeçalho para impressão - visível na tela e na impressão */}
             <div className="p-6 border-b text-center">
-              <h2 className="text-2xl font-bold">📋 Lista de Acessos Autorizados - PETRONAS</h2>
+              <h2 className="text-2xl font-bold">📋 Lista de Acessos Autorizados</h2>
               <p className="text-base text-gray-700">Data: {today} | Total de Agendamentos: {filteredSchedulings.length}</p>
               {(searchTerm || searchPlate) && (
                 <p className="text-sm text-gray-500">Filtros Ativos: {searchTerm} {searchPlate}</p>

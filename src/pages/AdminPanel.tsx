@@ -3,14 +3,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function AdminPanel() {
-  const { user, logout, users, deleteUser, fetchLogs, fetchStatistics } = useAuth();
+  const { user, logout, users, deleteUser, fetchUsers, fetchLogs, fetchStatistics } = useAuth();
   const navigate = useNavigate();
   const [confirmPassword, setConfirmPassword] = useState('');
   const [logs, setLogs] = useState<any[]>([]);
   const [statistics, setStatistics] = useState<any>({ accessCount: 0, scheduleCount: 0, pendingCount: 0 });
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [loadingStats, setLoadingStats] = useState(false);
-  
+
   // Fetch logs when component mounts and user is admin
   useEffect(() => {
     const loadLogs = async () => {
@@ -28,10 +28,10 @@ export default function AdminPanel() {
         setLogs([]); // Clear logs if not admin
       }
     };
-    
+
     loadLogs();
   }, [user, fetchLogs]);
-  
+
   // Fetch statistics when component mounts and user is admin
   useEffect(() => {
     const loadStats = async () => {
@@ -49,7 +49,7 @@ export default function AdminPanel() {
         setStatistics({ accessCount: 0, scheduleCount: 0, pendingCount: 0 }); // Reset stats if not admin
       }
     };
-    
+
     loadStats();
   }, [user, fetchStatistics]);
 
@@ -62,10 +62,13 @@ export default function AdminPanel() {
     if (window.confirm('Tem certeza que deseja excluir este usuário?')) {
       try {
         await deleteUser(id);
-        // Atualizar a lista de usuários após exclusão
-        await fetchUsers();
       } catch (error) {
         console.error('Erro ao deletar usuário:', error);
+      } finally {
+        // Atualizar a lista de usuários após exclusão para garantir atualização
+        fetchUsers().catch(fetchError => {
+          console.error('Erro ao atualizar lista de usuários:', fetchError);
+        });
       }
     }
   };
@@ -75,18 +78,18 @@ export default function AdminPanel() {
       alert('Senha incorreta!');
       return;
     }
-    
+
     // Get all user IDs except the current admin
     const userIds = users
       .filter(u => u.user.id !== user.id) // Don't delete the current admin
       .map(u => u.user.id);
-    
+
     try {
       // Delete each user
       for (const id of userIds) {
         await deleteUser(id);
       }
-      
+
       // Atualizar a lista de usuários após exclusão
       await fetchUsers();
       alert('Todos os usuários de teste foram removidos!');
@@ -107,7 +110,7 @@ export default function AdminPanel() {
       {/* Header */}
       <div className="gradient-bg bg-gradient-to-br from-blue-800 to-blue-600 text-white py-6">
         <div className="max-w-6xl mx-auto px-4">
-          <h1 className="text-3xl font-bold text-center mb-2">🏢 Sistema de Agendamentos PETRONAS</h1>
+          <h1 className="text-3xl font-bold text-center mb-2">🏢 Sistema de Agendamentos</h1>
           <p className="text-center text-blue-100">Gestão Completa de Acessos e Autorizações</p>
         </div>
       </div>
@@ -185,7 +188,7 @@ export default function AdminPanel() {
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="p-6 border-b flex justify-between items-center">
             <h3 className="text-xl font-bold text-gray-800">👥 Gerenciamento de Usuários</h3>
-            <button 
+            <button
               onClick={() => navigate('/dashboard')} // For now, link to dashboard where the modal exists
               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">➕ Novo Usuário</button>
           </div>
@@ -207,15 +210,14 @@ export default function AdminPanel() {
                       <td className="px-4 py-2">{userRecord.user.name}</td>
                       <td className="px-4 py-2">{userRecord.user.email}</td>
                       <td className="px-4 py-2">
-                        <span className={`${
-                          userRecord.user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                          userRecord.user.role === 'diretoria' ? 'bg-red-100 text-red-800' :
-                          userRecord.user.role === 'solicitante' ? 'bg-blue-100 text-blue-800' :
-                          'bg-green-100 text-green-800'
-                        } px-2 py-1 rounded text-xs`}>
+                        <span className={`${userRecord.user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                            userRecord.user.role === 'diretoria' ? 'bg-red-100 text-red-800' :
+                              userRecord.user.role === 'solicitante' ? 'bg-blue-100 text-blue-800' :
+                                'bg-green-100 text-green-800'
+                          } px-2 py-1 rounded text-xs`}>
                           {userRecord.user.role === 'admin' ? '🛡️ Admin' :
-                           userRecord.user.role === 'diretoria' ? '👔 Diretoria' :
-                           userRecord.user.role === 'solicitante' ? '🧑‍💼 Solicitante' : '🛂 Portaria'}
+                            userRecord.user.role === 'diretoria' ? '👔 Diretoria' :
+                              userRecord.user.role === 'solicitante' ? '🧑‍💼 Solicitante' : '🛂 Portaria'}
                         </span>
                       </td>
                       <td className="px-4 py-2">
@@ -223,7 +225,7 @@ export default function AdminPanel() {
                       </td>
                       <td className="px-4 py-2">
                         <button className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs mr-1">✏️</button>
-                        <button 
+                        <button
                           className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs"
                           onClick={() => handleDeleteUser(userRecord.user.id)}
                         >
@@ -261,7 +263,7 @@ export default function AdminPanel() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
-                  <button 
+                  <button
                     className="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-semibold"
                     onClick={handleDeleteAll}
                   >

@@ -16,26 +16,26 @@ export default function PortariaPanel() {
   }
 
   const approvedSchedulings = getApprovedSchedulings();
-  
+
   const filteredSchedulings = approvedSchedulings.filter((scheduling) => {
     const searchLower = searchTerm.toLowerCase();
     const plateLower = searchPlate.toLowerCase();
     const data = scheduling.data as any;
-    
+
     // Check if search term matches any of the criteria
-    const matchesGeneral = !searchTerm || 
+    const matchesGeneral = !searchTerm ||
       scheduling.requestedByName.toLowerCase().includes(searchLower) ||
       (data.cpf && data.cpf.includes(searchTerm)) ||
       (data.nomeCompleto && data.nomeCompleto.toLowerCase().includes(searchLower)) ||
       (data.nomeFuncionario && data.nomeFuncionario.toLowerCase().includes(searchLower)) ||
       (data.empresa && data.empresa.toLowerCase().includes(searchLower)) ||
       (data.empresaPrestadora && data.empresaPrestadora.toLowerCase().includes(searchLower));
-    
+
     // Check if plate matches
-    const matchesPlate = !searchPlate || 
+    const matchesPlate = !searchPlate ||
       (data.placaVeiculo && data.placaVeiculo.toLowerCase().includes(plateLower)) ||
       (data.placa && data.placa.toLowerCase().includes(plateLower));
-    
+
     return matchesGeneral && matchesPlate;
   });
 
@@ -70,7 +70,7 @@ export default function PortariaPanel() {
       {/* Header */}
       <div className="gradient-bg bg-gradient-to-br from-blue-800 to-blue-600 text-white py-6">
         <div className="max-w-6xl mx-auto px-4">
-          <h1 className="text-3xl font-bold text-center mb-2">🏢 Sistema de Agendamentos PETRONAS</h1>
+          <h1 className="text-3xl font-bold text-center mb-2">🏢 Sistema de Agendamentos </h1>
           <p className="text-center text-blue-100">Gestão Completa de Acessos e Autorizações</p>
         </div>
       </div>
@@ -93,24 +93,24 @@ export default function PortariaPanel() {
         {/* Busca Rápida */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="grid md:grid-cols-4 gap-4">
-            <input 
-              type="text" 
+            <input
+              type="text"
               id="search-general"
               placeholder="🔍 Buscar por nome, CPF ou empresa..."
               className="md:col-span-2 px-3 py-2 border border-gray-300 rounded-lg"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <input 
-              type="text" 
+            <input
+              type="text"
               id="search-plate"
               placeholder="🚗 Buscar por placa..."
               className="px-3 py-2 border border-gray-300 rounded-lg"
               value={searchPlate}
               onChange={(e) => setSearchPlate(e.target.value)}
             />
-            <button 
-              onClick={() => {}} // This function just updates the filtered results through state
+            <button
+              onClick={() => { }} // This function just updates the filtered results through state
               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
             >
               Buscar
@@ -149,10 +149,10 @@ export default function PortariaPanel() {
                         )}
                       </div>
                       <div className="flex flex-col space-y-2">
-                        <button 
+                        <button
                           onClick={() => handleCheckIn(scheduling.id, 'autorizado')}
                           className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">✅ Autorizar Entrada</button>
-                        <button 
+                        <button
                           onClick={() => handleCheckIn(scheduling.id, 'negado')}
                           className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">🚫 Negar Acesso</button>
                       </div>

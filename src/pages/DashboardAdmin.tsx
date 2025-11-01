@@ -21,7 +21,7 @@ type NewUserState = {
 
 const DashboardAdmin = () => {
   // Assumindo que addUser e deleteUser usam a SERVICE_ROLE_KEY no AuthContext
-  const { user, logout, users, addUser, adminAddUser, updateUser, updateUserPassword, deleteUser, fetchLogs, fetchStatistics, isLoading: isAuthLoading } = useAuth();
+  const { user, logout, users, addUser, adminAddUser, updateUser, updateUserPassword, deleteUser, fetchUsers, fetchLogs, fetchStatistics, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
 
   // Mantendo os estados que não são redundantes
@@ -195,12 +195,15 @@ const DashboardAdmin = () => {
       try {
         // deleteUser é uma função assíncrona, precisa de await.
         await deleteUser(id);
-        // Atualizar a lista de usuários após exclusão
-        await fetchUsers();
         alert('Usuário deletado com sucesso!');
       } catch (err: any) {
         console.error('Erro ao deletar usuário:', err);
         alert(`Erro ao deletar usuário: ${err.message || 'Ocorreu um erro desconhecido'}`);
+      } finally {
+        // Atualizar a lista de usuários após exclusão para garantir atualização
+        fetchUsers().catch(fetchError => {
+          console.error('Erro ao atualizar lista de usuários:', fetchError);
+        });
       }
     }
   };

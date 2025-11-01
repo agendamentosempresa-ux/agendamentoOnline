@@ -837,7 +837,7 @@ const DashboardSolicitante = () => {
       {/* Header */}
       <div className="gradient-bg bg-gradient-to-br from-blue-800 to-blue-600 text-white py-6">
         <div className="max-w-6xl mx-auto px-4">
-          <h1 className="text-3xl font-bold text-center mb-2">🏢 Sistema de Agendamentos PETRONAS</h1>
+          <h1 className="text-3xl font-bold text-center mb-2">🏢 Sistema de Agendamentos </h1>
           <p className="text-center text-blue-100">Gestão Completa de Acessos e Autorizações</p>
         </div>
       </div>
