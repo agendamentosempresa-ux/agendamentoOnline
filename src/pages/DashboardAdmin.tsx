@@ -31,7 +31,7 @@ const DashboardAdmin = () => {
   const [statistics, setStatistics] = useState<any>({ accessCount: 0, scheduleCount: 0, pendingCount: 0 });
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [loadingStats, setLoadingStats] = useState(false);
-  
+
   // Fetch logs when component mounts and user is admin
   useEffect(() => {
     const loadLogs = async () => {
@@ -49,10 +49,10 @@ const DashboardAdmin = () => {
         setLogs([]); // Clear logs if not admin/diretoria
       }
     };
-    
+
     loadLogs();
   }, [user, fetchLogs]);
-  
+
   // Fetch statistics when component mounts and user is admin
   useEffect(() => {
     const loadStats = async () => {
@@ -70,7 +70,7 @@ const DashboardAdmin = () => {
         setStatistics({ accessCount: 0, scheduleCount: 0, pendingCount: 0 }); // Reset stats if not admin/diretoria
       }
     };
-    
+
     loadStats();
   }, [user, fetchStatistics]);
 
@@ -359,11 +359,11 @@ const DashboardAdmin = () => {
                 // Format the date to show only date and time
                 const date = new Date(log.created_at);
                 const formattedDate = date.toLocaleString('pt-BR');
-                
+
                 // Determine color based on action type
                 let bgColor = 'bg-gray-50';
                 let icon = 'ℹ️';
-                
+
                 if (log.action === 'LOGIN') {
                   bgColor = 'bg-green-50';
                   icon = '✅';
@@ -380,7 +380,7 @@ const DashboardAdmin = () => {
                   bgColor = 'bg-red-50';
                   icon = '🗑️';
                 }
-                
+
                 return (
                   <div key={log.id || index} className={`flex justify-between items-center p-3 ${bgColor} rounded`}>
                     <span>{icon} {log.description}</span>
@@ -538,11 +538,11 @@ const DashboardAdmin = () => {
                 // Format the date to show only date and time
                 const date = new Date(log.created_at);
                 const formattedDate = date.toLocaleString('pt-BR');
-                
+
                 // Determine color based on action type
                 let bgColor = 'bg-gray-50';
                 let icon = 'ℹ️';
-                
+
                 if (log.action === 'LOGIN') {
                   bgColor = 'bg-green-50';
                   icon = '✅';
@@ -559,7 +559,7 @@ const DashboardAdmin = () => {
                   bgColor = 'bg-red-50';
                   icon = '🗑️';
                 }
-                
+
                 return (
                   <div key={log.id || index} className={`flex justify-between items-center p-3 ${bgColor} rounded`}>
                     <span>{icon} {log.description}</span>
@@ -581,7 +581,7 @@ const DashboardAdmin = () => {
       {/* Header */}
       <div className="gradient-bg bg-gradient-to-br from-blue-800 to-blue-600 text-white py-6">
         <div className="max-w-6xl mx-auto px-4">
-          <h1 className="text-3xl font-bold text-center mb-2">🏢 Sistema de Agendamentos PETRONAS</h1>
+          <h1 className="text-3xl font-bold text-center mb-2">🏢 Sistema de Agendamentos</h1>
           <p className="text-center text-blue-100">Gestão Completa de Acessos e Autorizações</p>
         </div>
       </div>
