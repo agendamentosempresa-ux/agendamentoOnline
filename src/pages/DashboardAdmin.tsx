@@ -112,6 +112,7 @@ const DashboardAdmin = () => {
   // 5. CORREÇÃO CRÍTICA: Lógica de Submissão do Formulário (Assíncrona e com tipagem)
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return; // Prevent multiple submissions
     setIsSubmitting(true);
 
     try {
@@ -124,8 +125,6 @@ const DashboardAdmin = () => {
 
       if (editingUser) {
         // Lógica de ATUALIZAÇÃO
-
-        // Nota: O updateUser recebe o ID e um objeto de updates.
         await updateUser(
           editingUser.id,
           {
@@ -157,11 +156,13 @@ const DashboardAdmin = () => {
 
       // Limpar estados
       handleCloseNewUserForm();
+      // Refresh the users list to show the new user
+      await fetchUsers();
 
     } catch (error: any) {
       console.error('Erro ao processar usuário:', error);
       // Mensagem de erro mais amigável
-      alert(`Erro: ${error.message.includes('already exists') ? 'Este e-mail já está em uso.' : error.message || 'Ocorreu um erro desconhecido.'}`);
+      alert(`Erro: ${error.message?.includes('already exists') ? 'Este e-mail já está em uso.' : error.message || 'Ocorreu um erro desconhecido.'}`);
     } finally {
       setIsSubmitting(false);
     }

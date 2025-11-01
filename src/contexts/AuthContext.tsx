@@ -448,12 +448,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Recarrega a lista para atualizar a tabela do AdminPanel
       if (user && (user.role === 'admin' || user.role === 'diretoria')) {
-        await fetchUsers();
+        try {
+          await fetchUsers();
+        } catch (fetchError) {
+          console.error('Erro ao atualizar lista de usuários após criação:', fetchError);
+        }
       }
       
       // Log the user creation activity
       if (user) {
-        await logActivity(user.id, 'CREATE_USER', `Admin ${user.name} created new user: ${name} with role ${role}`);
+        try {
+          await logActivity(user.id, 'CREATE_USER', `Admin ${user.name} created new user: ${name} with role ${role}`);
+        } catch (logError) {
+          console.error('Erro ao logar atividade de criação de usuário:', logError);
+        }
       }
     } catch (error: any) {
       console.error('Erro inesperado na criação de usuário admin:', error);
