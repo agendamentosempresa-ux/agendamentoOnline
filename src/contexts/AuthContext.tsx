@@ -161,23 +161,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      let clientToUse = supabase;
+      let data, error;
       
-      // If admin client is available and user is admin, use it to bypass RLS
+      // Try admin client first for admin users, fallback to regular client
       if (supabaseAdmin && user && (user.role === 'admin' || user.role === 'diretoria')) {
-        clientToUse = supabaseAdmin;
+        ({ data, error } = await supabaseAdmin
+          .from('profiles')
+          .select('id, full_name, email, role'));
+          
+        // If admin client fails, try regular client
+        if (error) {
+          console.warn('Admin client failed, falling back to regular client:', error);
+          ({ data, error } = await supabase
+            .from('profiles')
+            .select('id, full_name, email, role'));
+        }
+      } else {
+        // Use regular client
+        ({ data, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, role'));
       }
-
-      const { data, error } = await clientToUse
-        .from('profiles')
-        .select('id, full_name, email, role');
 
       if (error) {
         console.error('Erro ao buscar lista de usuários:', error);
         return;
       }
 
-      // Mapeia para o tipo UserRecord (ajuste conforme seu utils.ts)
+      // Mapeia para o tipo UserRecord
       const mappedUsers: UserRecord[] = data.map(p => ({
         password: '',
         user: {
@@ -199,30 +210,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Function to fetch logs
   const fetchLogs = async (limit: number = 50) => {
     try {
-      let clientToUse = supabase;
+      let data, error;
       
-      // If admin client is available, use it to bypass RLS (if needed)
+      // Try admin client first, then regular client
       if (supabaseAdmin) {
-        clientToUse = supabaseAdmin;
+        ({ data, error } = await supabaseAdmin
+          .from('logs')
+          .select(`
+            id,
+            action,
+            description,
+            created_at,
+            profiles!inner (
+              full_name,
+              email,
+              role
+            )
+          `)
+          .order('created_at', { ascending: false })
+          .limit(limit));
+        
+        // If admin client fails, try regular client
+        if (error) {
+          console.warn('Admin client failed for logs, falling back to regular client:', error);
+          ({ data, error } = await supabase
+            .from('logs')
+            .select(`
+              id,
+              action,
+              description,
+              created_at,
+              profiles!inner (
+                full_name,
+                email,
+                role
+              )
+            `)
+            .order('created_at', { ascending: false })
+            .limit(limit));
+        }
+      } else {
+        ({ data, error } = await supabase
+          .from('logs')
+          .select(`
+            id,
+            action,
+            description,
+            created_at,
+            profiles!inner (
+              full_name,
+              email,
+              role
+            )
+          `)
+          .order('created_at', { ascending: false })
+          .limit(limit));
       }
-
-      let query = clientToUse
-        .from('logs')
-        .select(`
-          id,
-          action,
-          description,
-          created_at,
-          profiles!inner (
-            full_name,
-            email,
-            role
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      const { data, error } = await query;
 
       if (error) {
         console.error('Erro ao buscar logs:', error);
@@ -248,31 +291,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Function to fetch statistics
   const fetchStatistics = async () => {
     try {
-      let clientToUse = supabase;
-      
-      // If admin client is available, use it to bypass RLS (if needed)
-      if (supabaseAdmin) {
-        clientToUse = supabaseAdmin;
-      }
-
       // Get the number of users who logged in today
       const today = new Date().toISOString().split('T')[0];
-      const { count: accessCount, error: accessError } = await clientToUse
+      
+      let accessCount = 0, scheduleCount = 0, pendingCount = 0;
+      let accessError, scheduleError, pendingError;
+
+      // Try admin client first, then regular client
+      let clientToUse = supabaseAdmin || supabase;
+      
+      ({ count: accessCount, error: accessError } = await clientToUse
         .from('logs')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', `${today}T00:00:00`)
-        .eq('action', 'LOGIN');
+        .eq('action', 'LOGIN'));
 
-      // Get the total number of schedules
-      const { count: scheduleCount, error: scheduleError } = await clientToUse
+      // If admin client fails, try regular client
+      if (accessError && supabaseAdmin) {
+        ({ count: accessCount, error: accessError } = await supabase
+          .from('logs')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', `${today}T00:00:00`)
+          .eq('action', 'LOGIN'));
+      }
+
+      ({ count: scheduleCount, error: scheduleError } = await clientToUse
         .from('schedules')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true }));
 
-      // Get the number of pending schedules
-      const { count: pendingCount, error: pendingError } = await clientToUse
+      if (scheduleError && supabaseAdmin) {
+        ({ count: scheduleCount, error: scheduleError } = await supabase
+          .from('schedules')
+          .select('*', { count: 'exact', head: true }));
+      }
+
+      ({ count: pendingCount, error: pendingError } = await clientToUse
         .from('schedules')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'pendente');
+        .eq('status', 'pendente'));
+
+      if (pendingError && supabaseAdmin) {
+        ({ count: pendingCount, error: pendingError } = await supabase
+          .from('schedules')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pendente'));
+      }
 
       if (accessError) console.error('Error fetching access count:', accessError);
       if (scheduleError) console.error('Error fetching schedule count:', scheduleError);
