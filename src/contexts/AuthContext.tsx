@@ -161,8 +161,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      // Assumimos que RLS permite SELECT ALL na tabela 'profiles' para Admin/Diretoria
-      const { data, error } = await supabase
+      let clientToUse = supabase;
+      
+      // If admin client is available and user is admin, use it to bypass RLS
+      if (supabaseAdmin && user && (user.role === 'admin' || user.role === 'diretoria')) {
+        clientToUse = supabaseAdmin;
+      }
+
+      const { data, error } = await clientToUse
         .from('profiles')
         .select('id, full_name, email, role');
 
@@ -193,7 +199,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Function to fetch logs
   const fetchLogs = async (limit: number = 50) => {
     try {
-      let query = supabase
+      let clientToUse = supabase;
+      
+      // If admin client is available, use it to bypass RLS (if needed)
+      if (supabaseAdmin) {
+        clientToUse = supabaseAdmin;
+      }
+
+      let query = clientToUse
         .from('logs')
         .select(`
           id,
@@ -235,21 +248,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Function to fetch statistics
   const fetchStatistics = async () => {
     try {
+      let clientToUse = supabase;
+      
+      // If admin client is available, use it to bypass RLS (if needed)
+      if (supabaseAdmin) {
+        clientToUse = supabaseAdmin;
+      }
+
       // Get the number of users who logged in today
       const today = new Date().toISOString().split('T')[0];
-      const { count: accessCount, error: accessError } = await supabase
+      const { count: accessCount, error: accessError } = await clientToUse
         .from('logs')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', `${today}T00:00:00`)
         .eq('action', 'LOGIN');
 
       // Get the total number of schedules
-      const { count: scheduleCount, error: scheduleError } = await supabase
+      const { count: scheduleCount, error: scheduleError } = await clientToUse
         .from('schedules')
         .select('*', { count: 'exact', head: true });
 
       // Get the number of pending schedules
-      const { count: pendingCount, error: pendingError } = await supabase
+      const { count: pendingCount, error: pendingError } = await clientToUse
         .from('schedules')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pendente');
@@ -518,6 +538,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const authUser = await getProfile(supabaseUser);
           console.log('Initial getProfile result:', authUser);
           setUser(authUser);
+          
           // Carrega a lista de usuários para o Admin/Diretoria
           if (authUser?.role === 'admin' || authUser?.role === 'diretoria') {
             await fetchUsers();
