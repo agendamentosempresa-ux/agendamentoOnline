@@ -214,10 +214,18 @@ const DashboardAdmin = () => {
       try {
         // deleteUser é uma função assíncrona, precisa de await.
         await deleteUser(id);
-        alert('Usuário deletado com sucesso!');
+        
+        toast({
+          title: "Sucesso!",
+          description: 'Usuário deletado com sucesso!',
+        });
       } catch (err: any) {
         console.error('Erro ao deletar usuário:', err);
-        alert(`Erro ao deletar usuário: ${err.message || 'Ocorreu um erro desconhecido'}`);
+        toast({
+          title: "Erro!",
+          description: `Erro ao deletar usuário: ${err.message || 'Ocorreu um erro desconhecido'}`,
+          variant: "destructive",
+        });
       } finally {
         // Atualizar a lista de usuários após exclusão para garantir atualização
         fetchUsers().catch(fetchError => {

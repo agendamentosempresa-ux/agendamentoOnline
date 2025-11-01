@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminPanel() {
   const { user, logout, users, deleteUser, fetchUsers, fetchLogs, fetchStatistics } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [confirmPassword, setConfirmPassword] = useState('');
   const [logs, setLogs] = useState<any[]>([]);
@@ -62,8 +64,18 @@ export default function AdminPanel() {
     if (window.confirm('Tem certeza que deseja excluir este usuário?')) {
       try {
         await deleteUser(id);
+        
+        toast({
+          title: "Sucesso!",
+          description: 'Usuário deletado com sucesso!',
+        });
       } catch (error) {
         console.error('Erro ao deletar usuário:', error);
+        toast({
+          title: "Erro!",
+          description: 'Erro ao deletar usuário',
+          variant: "destructive",
+        });
       } finally {
         // Atualizar a lista de usuários após exclusão para garantir atualização
         fetchUsers().catch(fetchError => {
@@ -75,7 +87,11 @@ export default function AdminPanel() {
 
   const handleDeleteAll = async () => {
     if (confirmPassword !== 'mwf17') {
-      alert('Senha incorreta!');
+      toast({
+        title: "Erro!",
+        description: 'Senha incorreta!',
+        variant: "destructive",
+      });
       return;
     }
 
@@ -90,13 +106,23 @@ export default function AdminPanel() {
         await deleteUser(id);
       }
 
-      // Atualizar a lista de usuários após exclusão
-      await fetchUsers();
-      alert('Todos os usuários de teste foram removidos!');
+      toast({
+        title: "Sucesso!",
+        description: 'Todos os usuários de teste foram removidos!',
+      });
       setConfirmPassword('');
     } catch (error) {
       console.error('Erro ao deletar usuários:', error);
-      alert('Ocorreu um erro ao deletar os usuários');
+      toast({
+        title: "Erro!",
+        description: 'Ocorreu um erro ao deletar os usuários',
+        variant: "destructive",
+      });
+    } finally {
+      // Atualizar a lista de usuários após exclusão para garantir atualização
+      fetchUsers().catch(fetchError => {
+        console.error('Erro ao atualizar lista de usuários:', fetchError);
+      });
     }
   };
 
