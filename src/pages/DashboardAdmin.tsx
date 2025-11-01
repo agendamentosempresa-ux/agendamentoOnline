@@ -179,9 +179,11 @@ const DashboardAdmin = () => {
       handleCloseNewUserForm();
       
       // Atualizar a lista de usuários em segundo plano
-      fetchUsers().catch(fetchError => {
-        console.error('Erro ao atualizar lista de usuários:', fetchError);
-      });
+      setTimeout(() => {
+        fetchUsers().catch(fetchError => {
+          console.error('Erro ao atualizar lista de usuários:', fetchError);
+        });
+      }, 100); // Pequeno delay para garantir que o formulário é fechado primeiro
 
     } catch (error: any) {
       console.error('Erro ao processar usuário:', error);
