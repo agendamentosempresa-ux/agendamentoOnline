@@ -1,4 +1,4 @@
-﻿// AuthContext.tsx
+// AuthContext.tsx
 
 import React, { createContext, useState, useContext, useEffect, ReactNode, useRef } from 'react';
 import { User } from '@supabase/supabase-js';
@@ -6,17 +6,7 @@ import { User } from '@supabase/supabase-js';
 import { supabase, supabaseAdmin } from '../lib/supabaseClient';
 import { UserRecord, UserRole } from '../lib/utils';
 
-// --- TIPAGENS ---
-// Role agora permite 'null' para perfis incompletos ou não definidos
-// UserRole and UserRecord are now imported from utils.ts
-
-interface AuthUser {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-}
-
+// --- TIPOS ---
 interface LogRecord {
   id: string;
   user_name: string;
@@ -31,6 +21,13 @@ interface Statistics {
   accessCount: number;
   scheduleCount: number;
   pendingCount: number;
+}
+
+interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
 }
 
 interface AuthContextType {
@@ -156,6 +153,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     console.log('AuthUser created:', authUser);
     return authUser;
+  };
+
+  // Function to log user activities
+  const logActivity = async (userId: string | null, action: string, description: string) => {
+    try {
+      // Get the real IP address and user agent if possible
+      // For now, we'll use placeholder values, but in a real app you might want to get this from a server endpoint
+      const { error } = await supabase
+        .from('logs')
+        .insert([{
+          user_id: userId,
+          action,
+          description,
+          ip_address: 'CLIENT_IP', // In a real app, get from server
+          user_agent: navigator.userAgent
+        }]);
+      
+      if (error) {
+        console.error('Error logging activity:', error);
+      }
+    } catch (error) {
+      console.error('Unexpected error in logActivity:', error);
+    }
   };
 
   const fetchUsers = async () => {
@@ -427,7 +447,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Recarrega a lista para atualizar a tabela do AdminPanel
-      await fetchUsers();
+      if (user && (user.role === 'admin' || user.role === 'diretoria')) {
+        await fetchUsers();
+      }
       
       // Log the user creation activity
       if (user) {
@@ -461,16 +483,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           throw new Error(`${authError.message}, ${profileError.message}`);
         }
       }
+
+      // Log the user deletion activity
+      if (user) {
+        await logActivity(user.id, 'DELETE_USER', `User ${user.name} deleted user ID: ${id}`);
+      }
     } catch (error: any) {
       console.error('Erro inesperado ao deletar usuário:', error);
       throw error;
     }
 
-    // Log the user deletion activity
-    if (user) {
-      await logActivity(user.id, 'DELETE_USER', `User ${user.name} deleted user ID: ${id}`);
-    }
-    
     // Se for o próprio admin se deletando (não deveria acontecer), ou se deletar da lista
     if (user && user.id === id) {
       setUser(null);
@@ -498,7 +520,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // Recarrega a lista
-    await fetchUsers();
+    if (user && (user.role === 'admin' || user.role === 'diretoria')) {
+      await fetchUsers();
+    }
     
     // Log the user update activity
     if (user) {
@@ -556,29 +580,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Function to log user activities
-  const logActivity = async (userId: string | null, action: string, description: string) => {
-    try {
-      // Get the real IP address and user agent if possible
-      // For now, we'll use placeholder values, but in a real app you might want to get this from a server endpoint
-      const { error } = await supabase
-        .from('logs')
-        .insert([{
-          user_id: userId,
-          action,
-          description,
-          ip_address: 'CLIENT_IP', // In a real app, get from server
-          user_agent: navigator.userAgent
-        }]);
-      
-      if (error) {
-        console.error('Error logging activity:', error);
-      }
-    } catch (error) {
-      console.error('Unexpected error in logActivity:', error);
-    }
-  };
-
   const logout = async () => {
     if (user) {
       await logActivity(user.id, 'LOGOUT', `User ${user.name} logged out`);
@@ -592,7 +593,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   /* EFEITO DE INICIALIZAÇÃO */
 
   useEffect(() => {
-    const checkUser = async () => {
+    let authSubscription: any = null;
+    
+    const initializeAuth = async () => {
       try {
         const { data: { user: supabaseUser } } = await supabase.auth.getUser();
         console.log('Initial user check result:', { supabaseUser: !!supabaseUser });
@@ -601,7 +604,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const authUser = await getProfile(supabaseUser);
           console.log('Initial getProfile result:', authUser);
           setUser(authUser);
-          
           // Carrega a lista de usuários para o Admin/Diretoria
           if (authUser?.role === 'admin' || authUser?.role === 'diretoria') {
             await fetchUsers();
@@ -612,48 +614,54 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } finally {
         setIsLoading(false);
       }
+
+      // Set up the auth state change listener
+      const { data: subscription } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          console.log('Auth state change:', event, !!session?.user);
+          
+          if (event === 'SIGNED_IN' && session?.user) {
+            // Skip updating user if a login is already in progress to avoid conflicts
+            if (isLoginInProgress.current) {
+              console.log('Login in progress, skipping auth state change update');
+              return;
+            }
+            
+            try {
+              const authUser = await getProfile(session.user);
+              console.log('Auth state change getProfile result:', authUser);
+              if (authUser) {
+                setUser(authUser);
+                if (authUser?.role === 'admin' || authUser?.role === 'diretoria') {
+                  await fetchUsers();
+                }
+              } else {
+                console.error('Auth state change: Could not get user profile after sign in');
+                // Don't set user to null here - let the UI handle the error
+              }
+            } catch (error) {
+              console.error('Error in auth state change handling:', error);
+            }
+          } else if (event === 'SIGNED_OUT') {
+            console.log('User signed out, clearing state');
+            // Reset the login in progress flag on sign out
+            isLoginInProgress.current = false;
+            setUser(null);
+            setUsers([]);
+          }
+        }
+      );
+      
+      authSubscription = subscription;
     };
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state change:', event, !!session?.user);
-        
-        if (event === 'SIGNED_IN' && session?.user) {
-          // Skip updating user if a login is already in progress to avoid conflicts
-          if (isLoginInProgress.current) {
-            console.log('Login in progress, skipping auth state change update');
-            return;
-          }
-          
-          try {
-            const authUser = await getProfile(session.user);
-            console.log('Auth state change getProfile result:', authUser);
-            if (authUser) {
-              setUser(authUser);
-              if (authUser?.role === 'admin' || authUser?.role === 'diretoria') {
-                await fetchUsers();
-              }
-            } else {
-              console.error('Auth state change: Could not get user profile after sign in');
-              // Don't set user to null here - let the UI handle the error
-            }
-          } catch (error) {
-            console.error('Error in auth state change handling:', error);
-          }
-        } else if (event === 'SIGNED_OUT') {
-          console.log('User signed out, clearing state');
-          // Reset the login in progress flag on sign out
-          isLoginInProgress.current = false;
-          setUser(null);
-          setUsers([]);
-        }
-      }
-    );
+    initializeAuth();
 
-    checkUser();
-
+    // Cleanup function
     return () => {
-      authListener?.subscription.unsubscribe();
+      if (authSubscription) {
+        authSubscription.subscription.unsubscribe();
+      }
     };
   }, []);
 
