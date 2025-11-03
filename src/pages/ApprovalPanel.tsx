@@ -252,6 +252,24 @@ export default function ApprovalPanel() {
                  'N/A'}
                 </div>
               </div>
+              
+              {/* Exibir informações dos acompanhantes se existirem */}
+              {(currentScheduling.type === 'servicos-avulsos' || currentScheduling.type === 'visitas') && 
+                (currentScheduling.data as any)?.acompanhantes && 
+                Array.isArray((currentScheduling.data as any).acompanhantes) && 
+                (currentScheduling.data as any).acompanhantes.length > 0 && (
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="text-md font-semibold text-gray-800 mb-3">Acompanhantes ({(currentScheduling.data as any).acompanhantes.length}):</h4>
+                  <div className="space-y-2">
+                    {(currentScheduling.data as any).acompanhantes.map((acompanhante: any, index: number) => (
+                      <div key={index} className="p-2 bg-gray-50 rounded text-sm">
+                        <div><strong>Nome:</strong> {acompanhante.nome || 'N/A'}</div>
+                        <div><strong>CPF:</strong> {acompanhante.cpf || 'N/A'} | <strong>RG:</strong> {acompanhante.rg || 'N/A'}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">💬 Justificativa da Decisão:</label>
                 <textarea 

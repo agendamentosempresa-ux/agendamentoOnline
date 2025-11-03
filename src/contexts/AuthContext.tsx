@@ -85,20 +85,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (profilesByEmail && profilesByEmail.length > 0) {
-        // If multiple profiles found, use the first one
+        // Profile found by email, but ID doesn't match - this means there's a mismatch
         const profileByEmail = profilesByEmail[0];
+        console.log('Profile found by email but ID mismatch, user ID:', supabaseUser.id, 'profile ID:', profileByEmail.id);
         
-        // Update the profile with the correct user ID to prevent future issues
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ id: supabaseUser.id })
-          .eq('email', supabaseUser.email);
-
-        if (updateError) {
-          console.error('Warning: Could not update profile ID:', updateError.message);
-        }
-
-        profile = profileByEmail;
+        // Update the profile in the local object to match the auth user ID
+        profile = { ...profileByEmail, id: supabaseUser.id };
       } else {
         // No profile found - create a default one
         console.log('No profile found, creating default profile for:', supabaseUser.email);
@@ -107,6 +99,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const defaultProfile = {
           full_name: supabaseUser.email?.split('@')[0] || 'Usuário', // Use part of email as name
           role: 'solicitante' as UserRole,
+          email: supabaseUser.email,
           id: supabaseUser.id
         };
         

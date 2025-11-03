@@ -5,7 +5,7 @@ export type SchedulingType =
   | 'integracao'
   | 'acesso-antecipado';
 
-export type SchedulingStatus = 'pendente' | 'aprovado' | 'reprovado';
+export type SchedulingStatus = 'pendente' | 'aprovado' | 'reprovado' | 'cancelado';
 
 export type CheckInStatus = 'autorizado' | 'negado' | 'nao-compareceu';
 

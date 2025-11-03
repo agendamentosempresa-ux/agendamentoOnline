@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+//import '../Loader.css';
 
 // 1. Definição de Tipos para garantir type-safety e clareza
 type UserRole = 'admin' | 'diretoria' | 'solicitante' | 'portaria';
@@ -130,7 +131,7 @@ const DashboardAdmin = () => {
       }
 
       let successMessage = '';
-      
+
       if (editingUser) {
         // Lógica de ATUALIZAÇÃO
         // Se uma nova senha foi fornecida, atualizar também a senha
@@ -184,10 +185,10 @@ const DashboardAdmin = () => {
         title: "Sucesso!",
         description: successMessage,
       });
-      
+
       // Limpar estados e fechar o formulário
       handleCloseNewUserForm();
-      
+
       // Atualizar a lista de usuários em segundo plano
       setTimeout(() => {
         fetchUsers().catch(fetchError => {
@@ -214,7 +215,7 @@ const DashboardAdmin = () => {
       try {
         // deleteUser é uma função assíncrona, precisa de await.
         await deleteUser(id);
-        
+
         toast({
           title: "Sucesso!",
           description: 'Usuário deletado com sucesso!',
@@ -604,9 +605,9 @@ const DashboardAdmin = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 relative">
       {/* Header */}
-      <div className="gradient-bg bg-gradient-to-br from-blue-800 to-blue-600 text-white py-6">
+      <div className="gradient-bg bg-gradient-to-br from-blue-800 to-blue-600 text-white py-6 relative z-10">
         <div className="max-w-6xl mx-auto px-4">
           <h1 className="text-3xl font-bold text-center mb-2">🏢 Sistema de Agendamentos</h1>
           <p className="text-center text-blue-100">Gestão Completa de Acessos e Autorizações</p>
@@ -619,16 +620,18 @@ const DashboardAdmin = () => {
       {/* Footer */}
       <footer className="bg-gray-800 text-white py-6 mt-12">
         <div className="max-w-6xl mx-auto px-4 text-center">
-          <p className="text-sm">Design Visual e Site desenvolvido por <strong>Manuela Wendling</strong> | <strong>Full Arts Design</strong></p>
+          <p className="text-sm">
+            Design Visual e Site desenvolvido por <strong>Manuela Wendling</strong> | <strong>Full Arts Design</strong>
+          </p>
         </div>
       </footer>
 
       {/* Modals */}
-      {/* 8. REMOÇÃO DE MODAL REDUNDANTE: renderUserModal foi removido. */}
       {showNewUserForm && renderNewUserForm()}
       {showReportsModal && renderReportsModal()}
     </div>
   );
+
 };
 
 export default DashboardAdmin;

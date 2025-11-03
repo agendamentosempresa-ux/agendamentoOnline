@@ -12,6 +12,9 @@ interface SchedulingContextType {
   addScheduling: (scheduling: Omit<Scheduling, 'id' | 'createdAt' | 'status' | 'solicitanteId' | 'solicitanteEmail'>) => void;
   updateStatus: (id: string, status: SchedulingStatus, comment?: string) => void;
   updateCheckInStatus: (id: string, checkInStatus: CheckInStatus) => void;
+  updateScheduling: (id: string, updatedData: Partial<Scheduling>) => Promise<void>;
+  cancelScheduling: (id: string) => Promise<void>;
+  clearHistory: () => Promise<void>;
   getSchedulingsByUser: (userId: string) => Scheduling[];
   getPendingSchedulings: () => Scheduling[];
   getApprovedSchedulings: () => Scheduling[];
@@ -63,6 +66,46 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('petronas_schedulings', JSON.stringify(schedulings));
   }, [schedulings]);
 
+  // Função auxiliar para garantir que o usuário tenha um perfil válido
+  const ensureUserProfile = async (userId: string, userName?: string, userEmail?: string) => {
+    try {
+      // Verificar se o usuário existe na tabela profiles
+      const { data: existingProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .single();
+        
+      if (profileError || !existingProfile) {
+        console.log('Perfil não encontrado para o usuário, criando perfil temporário...', userId);
+        
+        // Tentar obter informações do usuário pelo email
+        let profileToCreate = {
+          id: userId,
+          full_name: userName || userEmail?.split('@')[0] || 'Usuário Padrão',
+          role: 'solicitante' as const,
+          email: userEmail || ''
+        };
+        
+        // Tentar criar o perfil
+        const { error: createError } = await supabase
+          .from('profiles')
+          .insert([profileToCreate]);
+          
+        if (createError) {
+          console.warn('Não foi possível criar perfil, mas prosseguindo com a solicitação:', createError.message);
+        }
+        
+        return true; // Continuar com a operação mesmo se não for possível criar o perfil
+      }
+      
+      return true; // Perfil existe
+    } catch (error) {
+      console.warn('Erro ao verificar/criar perfil do usuário:', error);
+      return true; // Continuar com a operação mesmo em caso de erro
+    }
+  };
+
   const addScheduling = async (scheduling: Omit<Scheduling, 'id' | 'createdAt' | 'status' | 'solicitanteId' | 'solicitanteEmail'>) => {
     // Gerar ID único para o agendamento
     const newId = self.crypto && self.crypto.randomUUID 
@@ -73,12 +116,18 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
           return v.toString(16);
         });
 
+    // Verificar e garantir que o perfil do usuário existe
+    const userId = (scheduling as any).requestedBy || '';
+    if (userId) {
+      await ensureUserProfile(userId, (scheduling as any).requestedByName, null);
+    }
+
     // Mapear os campos para o formato do banco de dados
     const newSchedulingDb = {
       id: newId,
       type: scheduling.type,
       status: 'pendente',
-      requested_by: (scheduling as any).requestedBy || '',
+      requested_by: userId,
       requested_by_name: (scheduling as any).requestedByName || '',
       data: scheduling.data,
       observacoes: '',
@@ -92,18 +141,65 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
       const { data: insertData, error } = await supabase.from('schedules').insert([newSchedulingDb]).select();
       if (error) {
         console.error('Erro inserindo schedule no supabase', error);
-        // Fallback: adicionar localmente se a inserção no Supabase falhar
-        const newScheduling: Scheduling = {
-          ...scheduling as Scheduling,
-          id: newId,
-          status: 'pendente',
-          solicitanteId: (scheduling as any).requestedBy || '',
-          solicitanteEmail: '',
-          createdAt: new Date().toISOString(),
-          checkInStatus: null,
-          checkInAt: null,
-        };
-        setSchedulings(prev => [...prev, newScheduling]);
+        
+        // Verificar se o erro é devido à constraint de chave estrangeira
+        if (error.code === '23503' && error.message.includes('requested_by')) {
+          // É um erro de chave estrangeira, o que é estranho já que tentamos garantir o perfil
+          // Provavelmente é um erro de sincronização, vamos tentar de novo após um pequeno delay
+          await new Promise(resolve => setTimeout(resolve, 500)); // Esperar 500ms
+          
+          // Tentar inserir novamente
+          const { data: retryData, error: retryError } = await supabase.from('schedules').insert([newSchedulingDb]).select();
+          
+          if (retryError) {
+            console.error('Erro persiste após tentativa de recuperação, salvando localmente:', retryError);
+            // Fallback: adicionar localmente se a inserção no Supabase falhar mesmo após verificação
+            const newScheduling: Scheduling = {
+              ...scheduling as Scheduling,
+              id: newId,
+              status: 'pendente',
+              solicitanteId: userId,
+              solicitanteEmail: '',
+              createdAt: new Date().toISOString(),
+              checkInStatus: null,
+              checkInAt: null,
+            };
+            setSchedulings(prev => [...prev, newScheduling]);
+          } else if (retryData && retryData.length > 0) {
+            console.log('Solicitação salva após nova tentativa no Supabase:', retryData[0]);
+            // Mapear de volta para o formato do TypeScript
+            const insertedScheduling: Scheduling = {
+              id: retryData[0].id,
+              type: retryData[0].type,
+              status: retryData[0].status,
+              requestedBy: retryData[0].requested_by,
+              requestedByName: retryData[0].requested_by_name,
+              data: retryData[0].data,
+              observacoes: retryData[0].observacoes,
+              createdAt: retryData[0].created_at,
+              reviewedAt: retryData[0].reviewed_at,
+              reviewedBy: retryData[0].reviewed_by,
+              solicitanteId: retryData[0].requested_by,
+              solicitanteEmail: '', // não está no banco de dados
+              checkInStatus: retryData[0].check_in_status,
+              checkInAt: retryData[0].check_in_at,
+            };
+            setSchedulings(prev => [...prev, insertedScheduling]);
+          }
+        } else {
+          // Outro tipo de erro, salvar localmente
+          const newScheduling: Scheduling = {
+            ...scheduling as Scheduling,
+            id: newId,
+            status: 'pendente',
+            solicitanteId: userId,
+            solicitanteEmail: '',
+            createdAt: new Date().toISOString(),
+            checkInStatus: null,
+            checkInAt: null,
+          };
+          setSchedulings(prev => [...prev, newScheduling]);
+        }
       } else if (insertData && insertData.length > 0) {
         console.log('Solicitação salva com sucesso no Supabase:', insertData[0]);
         // Mapear de volta para o formato do TypeScript
@@ -131,7 +227,7 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
           ...scheduling as Scheduling,
           id: newId,
           status: 'pendente',
-          solicitanteId: (scheduling as any).requestedBy || '',
+          solicitanteId: userId,
           solicitanteEmail: '',
           createdAt: new Date().toISOString(),
           checkInStatus: null,
@@ -146,7 +242,7 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
         ...scheduling as Scheduling,
         id: newId,
         status: 'pendente',
-        solicitanteId: (scheduling as any).requestedBy || '',
+        solicitanteId: userId,
         solicitanteEmail: '',
         createdAt: new Date().toISOString(),
         checkInStatus: null,
@@ -159,6 +255,7 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
   const updateStatus = async (id: string, status: SchedulingStatus, comment?: string) => {
     try {
       const reviewedAt = new Date().toISOString();
+      // Também atualizar o reviewed_by com o ID do usuário atual (se disponível)
       const { data, error } = await supabase
         .from('schedules')
         .update({ 
@@ -271,6 +368,102 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateScheduling = async (id: string, updatedData: Partial<Scheduling>) => {
+    try {
+      // Atualizar no Supabase
+      const { data, error } = await supabase
+        .from('schedules')
+        .update({ 
+          data: updatedData.data,
+          requested_by_name: updatedData.requestedByName || undefined
+        })
+        .eq('id', id)
+        .select();
+      
+      if (error) {
+        console.error('Erro atualizando solicitação no supabase', error);
+        setSchedulings(prev => prev.map(s => 
+          s.id === id ? { ...s, ...updatedData } : s
+        ));
+      } else if (data && data.length > 0) {
+        console.log('Solicitação atualizada com sucesso no Supabase:', data[0]);
+        // Mapear de volta para o formato do TypeScript
+        const updatedScheduling: Scheduling = {
+          id: data[0].id,
+          type: data[0].type,
+          status: data[0].status,
+          requestedBy: data[0].requested_by,
+          requestedByName: data[0].requested_by_name,
+          data: data[0].data,
+          observacoes: data[0].observacoes,
+          createdAt: data[0].created_at,
+          reviewedAt: data[0].reviewed_at,
+          reviewedBy: data[0].reviewed_by,
+          solicitanteId: data[0].requested_by,
+          solicitanteEmail: '',
+          checkInStatus: data[0].check_in_status,
+          checkInAt: data[0].check_in_at,
+        };
+        setSchedulings(prev => prev.map(s => s.id === id ? updatedScheduling : s));
+      } else {
+        console.warn('Nenhum dado retornado após atualização de solicitação no Supabase');
+      }
+    } catch (err) {
+      console.error('Erro updateScheduling', err);
+      setSchedulings(prev => prev.map(s => 
+        s.id === id ? { ...s, ...updatedData } : s
+      ));
+    }
+  };
+
+  const cancelScheduling = async (id: string) => {
+    try {
+      // Atualizar status para cancelado no Supabase
+      const { data, error } = await supabase
+        .from('schedules')
+        .update({ 
+          status: 'cancelado',
+          observacoes: 'Solicitação cancelada pelo solicitante' 
+        })
+        .eq('id', id)
+        .select();
+      
+      if (error) {
+        console.error('Erro cancelando solicitação no supabase', error);
+        setSchedulings(prev => prev.map(s => 
+          s.id === id ? { ...s, status: 'cancelado', observacoes: 'Solicitação cancelada pelo solicitante' } : s
+        ));
+      } else if (data && data.length > 0) {
+        console.log('Solicitação cancelada com sucesso no Supabase:', data[0]);
+        // Mapear de volta para o formato do TypeScript
+        const updatedScheduling: Scheduling = {
+          id: data[0].id,
+          type: data[0].type,
+          status: data[0].status,
+          requestedBy: data[0].requested_by,
+          requestedByName: data[0].requested_by_name,
+          data: data[0].data,
+          observacoes: data[0].observacoes,
+          createdAt: data[0].created_at,
+          reviewedAt: data[0].reviewed_at,
+          reviewedBy: data[0].reviewed_by,
+          solicitanteId: data[0].requested_by,
+          solicitanteEmail: '',
+          checkInStatus: data[0].check_in_status,
+          checkInAt: data[0].check_in_at,
+        };
+        setSchedulings(prev => prev.map(s => s.id === id ? updatedScheduling : s));
+      } else {
+        console.warn('Nenhum dado retornado após cancelamento de solicitação no Supabase');
+      }
+    } catch (err) {
+      console.error('Erro cancelScheduling', err);
+      setSchedulings(prev => prev.map(s => 
+        s.id === id ? { ...s, status: 'cancelado', observacoes: 'Solicitação cancelada pelo solicitante' } : s
+      ));
+    }
+  };
+
   const getSchedulingsByUser = (userId: string) => {
     return schedulings.filter(s => s.requestedBy === userId);
   };
@@ -284,6 +477,53 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
     return schedulings.filter(s => s.status === 'aprovado');
   };
 
+  const clearHistory = async () => {
+    try {
+      // Limpar do Supabase - deletar registros antigos (mais antigos que 30 dias)
+      const trintaDiasAtras = new Date();
+      trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+      const dataLimite = trintaDiasAtras.toISOString();
+      
+      // Deletar registros mais antigos que 30 dias e que não são pendentes
+      const { error } = await supabase
+        .from('schedules')
+        .delete()
+        .lt('created_at', dataLimite)
+        .not('status', 'eq', 'pendente');
+      
+      if (error) {
+        console.error('Erro ao limpar histórico no Supabase', error);
+        // Fallback: limpar registros antigos apenas do localStorage
+        const registrosRecentes = schedulings.filter(s => {
+          const dataCriacao = new Date(s.createdAt);
+          return s.status === 'pendente' || dataCriacao >= trintaDiasAtras;
+        });
+        setSchedulings(registrosRecentes);
+        localStorage.setItem('petronas_schedulings', JSON.stringify(registrosRecentes));
+      } else {
+        console.log('Histórico antigo limpo com sucesso no Supabase');
+        // Atualizar o estado local para manter apenas registros recentes
+        const registrosRecentes = schedulings.filter(s => {
+          const dataCriacao = new Date(s.createdAt);
+          return s.status === 'pendente' || dataCriacao >= trintaDiasAtras;
+        });
+        setSchedulings(registrosRecentes);
+        localStorage.setItem('petronas_schedulings', JSON.stringify(registrosRecentes));
+      }
+    } catch (err) {
+      console.error('Erro ao limpar histórico', err);
+      // Fallback: limpar registros antigos apenas do localStorage
+      const trintaDiasAtras = new Date();
+      trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+      const registrosRecentes = schedulings.filter(s => {
+        const dataCriacao = new Date(s.createdAt);
+        return s.status === 'pendente' || dataCriacao >= trintaDiasAtras;
+      });
+      setSchedulings(registrosRecentes);
+      localStorage.setItem('petronas_schedulings', JSON.stringify(registrosRecentes));
+    }
+  };
+
   return (
     <SchedulingContext.Provider
       value={{
@@ -291,6 +531,9 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
         addScheduling,
         updateStatus,
         updateCheckInStatus,
+        updateScheduling,
+        cancelScheduling,
+        clearHistory,
         getSchedulingsByUser,
         getPendingSchedulings,
         getApprovedSchedulings,

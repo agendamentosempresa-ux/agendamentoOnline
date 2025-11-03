@@ -8,7 +8,7 @@ import type { Scheduling, ServicosAvulsosData, EntregaLiberacaoData, VisitasData
 
 const DashboardDiretor = () => {
   const { user, logout } = useAuth();
-  const { schedulings, getPendingSchedulings, updateStatus, getSchedulingsByUser, getApprovedSchedulings } = useScheduling();
+  const { schedulings, getPendingSchedulings, updateStatus, getSchedulingsByUser, getApprovedSchedulings, clearHistory } = useScheduling();
   const navigate = useNavigate();
   const [tipoFiltro, setTipoFiltro] = useState('todos');
   const [urgenciaFiltro, setUrgenciaFiltro] = useState('todas');
@@ -43,9 +43,19 @@ const DashboardDiretor = () => {
   // Função auxiliar para obter o nome do solicitante com base no tipo
   const getSchedulingName = (scheduling: Scheduling) => {
     if (scheduling.type === 'servicos-avulsos') {
-      return (scheduling.data as any)?.nomeFuncionario || 'Solicitação';
+      const baseName = (scheduling.data as any)?.nomeFuncionario || 'Solicitação';
+      const acompanhantes = (scheduling.data as any)?.acompanhantes;
+      if (acompanhantes && Array.isArray(acompanhantes) && acompanhantes.length > 0) {
+        return `${baseName} (+${acompanhantes.length} acomp.)`;
+      }
+      return baseName;
     } else if (scheduling.type === 'visitas') {
-      return (scheduling.data as any)?.nomeCompleto || 'Solicitação';
+      const baseName = (scheduling.data as any)?.nomeCompleto || 'Solicitação';
+      const acompanhantes = (scheduling.data as any)?.acompanhantes;
+      if (acompanhantes && Array.isArray(acompanhantes) && acompanhantes.length > 0) {
+        return `${baseName} (+${acompanhantes.length} acomp.)`;
+      }
+      return baseName;
     } else if (scheduling.type === 'entrega-liberacao') {
       return (scheduling.data as any)?.nomeMotorista || 'Solicitação';
     } else if (scheduling.type === 'integracao') {
@@ -186,6 +196,20 @@ const DashboardDiretor = () => {
   const showDetails = (scheduling: Scheduling) => {
     setCurrentScheduling(scheduling);
     setShowDetailsModal(true);
+    // Fechar o modal de histórico ao abrir o de detalhes
+    setShowHistoryModal(false);
+    // Garantir que o comentário seja resetado quando abrir o modal
+    setComment('');
+  };
+
+  // Função para mostrar detalhes de uma solicitação do histórico
+  const showHistoricalSchedulingDetails = (scheduling: Scheduling) => {
+    setCurrentScheduling(scheduling);
+    setShowDetailsModal(true);
+    // Fechar o modal de histórico ao abrir o de detalhes
+    setShowHistoryModal(false);
+    // Garantir que o comentário seja resetado
+    setComment('');
   };
 
   const getSchedulingTypeLabel = (type: string) => {
@@ -458,7 +482,7 @@ const DashboardDiretor = () => {
               agendamentosFiltrados.map((scheduling) => (
                 <div key={scheduling.id} className="p-6">
                   <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
+                    <div className="flex-1 cursor-pointer" onClick={() => showDetails(scheduling)}>
                       <div className="flex items-center mb-2">
                         <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium mr-2">
                           {getSchedulingTypeLabel(scheduling.type)}
@@ -473,13 +497,22 @@ const DashboardDiretor = () => {
                     </div>
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => showDetails(scheduling)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          showDetails(scheduling);
+                        }}
                         className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">🔍 Detalhes</button>
                       <button
-                        onClick={() => handleApprove(scheduling.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleApprove(scheduling.id);
+                        }}
                         className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">👍 Aprovar</button>
                       <button
-                        onClick={() => setSelectedScheduling(scheduling.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedScheduling(scheduling.id);
+                        }}
                         className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">👎 Reprovar</button>
                     </div>
                   </div>
@@ -492,7 +525,7 @@ const DashboardDiretor = () => {
 
       {/* Modal de Detalhes */}
       {showDetailsModal && currentScheduling && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b">
               <div className="flex justify-between items-center">
@@ -548,50 +581,94 @@ const DashboardDiretor = () => {
                 // Expanded per-type detailed rendering for other types
                 <div className="text-sm space-y-4">
                   {currentScheduling.type === 'servicos-avulsos' && (
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div><strong>Nome:</strong> {(currentScheduling.data as any)?.nomeFuncionario || 'N/A'}</div>
-                      <div><strong>Empresa Prestadora:</strong> {(currentScheduling.data as any)?.empresaPrestadora || 'N/A'}</div>
-                      <div><strong>CPF:</strong> {(currentScheduling.data as any)?.cpf || 'N/A'}</div>
-                      <div><strong>Telefone:</strong> {(currentScheduling.data as any)?.telefone || 'N/A'}</div>
-                      <div><strong>Responsável HSSE:</strong> {(currentScheduling.data as any)?.responsavelHSSE || 'N/A'}</div>
-                      <div><strong>Responsável Serviço:</strong> {(currentScheduling.data as any)?.responsavelServico || 'N/A'}</div>
-                      <div><strong>Número APR:</strong> {(currentScheduling.data as any)?.numeroAPR || 'N/A'}</div>
-                      <div><strong>Possui Veículo:</strong> {(currentScheduling.data as any)?.possuiVeiculo ? 'Sim' : 'Não'}</div>
-                      {(currentScheduling.data as any)?.possuiVeiculo && (
-                        <>
-                          <div><strong>Marca Veículo:</strong> {(currentScheduling.data as any)?.marcaVeiculo || 'N/A'}</div>
-                          <div><strong>Modelo Veículo:</strong> {(currentScheduling.data as any)?.modeloVeiculo || 'N/A'}</div>
-                          <div><strong>Placa:</strong> {(currentScheduling.data as any)?.placa || (currentScheduling.data as any)?.placaVeiculo || 'N/A'}</div>
-                        </>
+                    <div className="space-y-4">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div><strong>Nome:</strong> {(currentScheduling.data as any)?.nomeFuncionario || 'N/A'}</div>
+                        <div><strong>Empresa Prestadora:</strong> {(currentScheduling.data as any)?.empresaPrestadora || 'N/A'}</div>
+                        <div><strong>CPF:</strong> {(currentScheduling.data as any)?.cpf || 'N/A'}</div>
+                        <div><strong>Telefone:</strong> {(currentScheduling.data as any)?.telefone || 'N/A'}</div>
+                        <div><strong>Responsável HSSE:</strong> {(currentScheduling.data as any)?.responsavelHSSE || 'N/A'}</div>
+                        <div><strong>Responsável Serviço:</strong> {(currentScheduling.data as any)?.responsavelServico || 'N/A'}</div>
+                        <div><strong>Número APR:</strong> {(currentScheduling.data as any)?.numeroAPR || 'N/A'}</div>
+                        <div><strong>Possui Veículo:</strong> {(currentScheduling.data as any)?.possuiVeiculo ? 'Sim' : 'Não'}</div>
+                        {(currentScheduling.data as any)?.possuiVeiculo && (
+                          <>
+                            <div><strong>Marca Veículo:</strong> {(currentScheduling.data as any)?.marcaVeiculo || 'N/A'}</div>
+                            <div><strong>Modelo Veículo:</strong> {(currentScheduling.data as any)?.modeloVeiculo || 'N/A'}</div>
+                            <div><strong>Placa:</strong> {(currentScheduling.data as any)?.placa || (currentScheduling.data as any)?.placaVeiculo || 'N/A'}</div>
+                          </>
+                        )}
+                        <div><strong>Data Início:</strong> {(currentScheduling.data as any)?.dataInicio || 'N/A'}</div>
+                        <div><strong>Hora Início:</strong> {(currentScheduling.data as any)?.horaInicio || 'N/A'}</div>
+                        <div><strong>Data Término:</strong> {(currentScheduling.data as any)?.dataTermino || 'N/A'}</div>
+                        <div><strong>Hora Término:</strong> {(currentScheduling.data as any)?.horaTermino || 'N/A'}</div>
+                        <div><strong>Prioridade:</strong> {(currentScheduling.data as any)?.prioridade || 'N/A'}</div>
+                        <div className="md:col-span-2"><strong>Motivo do Serviço:</strong> {(currentScheduling.data as any)?.motivoServico || 'N/A'}</div>
+                        <div><strong>Acesso Refeitório:</strong> {(currentScheduling.data as any)?.liberacaoRefeitorio ? 'Sim' : 'Não'}</div>
+                        <div><strong>Acompanhamento Técnico:</strong> {(currentScheduling.data as any)?.acompanhamentoTecnico ? 'Sim' : 'Não'}</div>
+                        <div><strong>Transporte Equipamentos:</strong> {(currentScheduling.data as any)?.transporteEquipamentos ? 'Sim' : 'Não'}</div>
+                        <div><strong>Portaria:</strong> {(currentScheduling.data as any)?.portariaAcesso || 'N/A'}</div>
+                      </div>
+                      
+                      {/* Exibir informações dos acompanhantes se existirem */}
+                      {(currentScheduling.data as any)?.acompanhantes && 
+                        Array.isArray((currentScheduling.data as any).acompanhantes) && 
+                        (currentScheduling.data as any).acompanhantes.length > 0 && (
+                        <div className="border-t pt-4">
+                          <h4 className="text-md font-semibold text-gray-800 mb-3">Acompanhantes ({(currentScheduling.data as any).acompanhantes.length}):</h4>
+                          <div className="space-y-3">
+                            {(currentScheduling.data as any).acompanhantes.map((acompanhante: any, index: number) => (
+                              <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                                  <div><strong>Nome:</strong> {acompanhante.nome || 'N/A'}</div>
+                                  <div><strong>CPF:</strong> {acompanhante.cpf || 'N/A'}</div>
+                                  <div><strong>RG:</strong> {acompanhante.rg || 'N/A'}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       )}
-                      <div><strong>Data Início:</strong> {(currentScheduling.data as any)?.dataInicio || 'N/A'}</div>
-                      <div><strong>Hora Início:</strong> {(currentScheduling.data as any)?.horaInicio || 'N/A'}</div>
-                      <div><strong>Data Término:</strong> {(currentScheduling.data as any)?.dataTermino || 'N/A'}</div>
-                      <div><strong>Hora Término:</strong> {(currentScheduling.data as any)?.horaTermino || 'N/A'}</div>
-                      <div><strong>Prioridade:</strong> {(currentScheduling.data as any)?.prioridade || 'N/A'}</div>
-                      <div className="md:col-span-2"><strong>Motivo do Serviço:</strong> {(currentScheduling.data as any)?.motivoServico || 'N/A'}</div>
-                      <div><strong>Acesso Refeitório:</strong> {(currentScheduling.data as any)?.liberacaoRefeitorio ? 'Sim' : 'Não'}</div>
-                      <div><strong>Acompanhamento Técnico:</strong> {(currentScheduling.data as any)?.acompanhamentoTecnico ? 'Sim' : 'Não'}</div>
-                      <div><strong>Transporte Equipamentos:</strong> {(currentScheduling.data as any)?.transporteEquipamentos ? 'Sim' : 'Não'}</div>
-                      <div><strong>Portaria:</strong> {(currentScheduling.data as any)?.portariaAcesso || 'N/A'}</div>
                     </div>
                   )}
 
                   {currentScheduling.type === 'visitas' && (
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div><strong>Nome:</strong> {(currentScheduling.data as any)?.nomeCompleto || 'N/A'}</div>
-                      <div><strong>Empresa:</strong> {(currentScheduling.data as any)?.empresaVisitante || 'N/A'}</div>
-                      <div><strong>CPF:</strong> {(currentScheduling.data as any)?.cpf || 'N/A'}</div>
-                      <div><strong>Telefone:</strong> {(currentScheduling.data as any)?.telefone || 'N/A'}</div>
-                      <div><strong>Pessoa Visitada:</strong> {(currentScheduling.data as any)?.pessoaVisitada || 'N/A'}</div>
-                      <div><strong>Data Visita:</strong> {(currentScheduling.data as any)?.dataVisita || 'N/A'}</div>
-                      <div><strong>Previsão Chegada:</strong> {(currentScheduling.data as any)?.previsaoChegada || 'N/A'}</div>
-                      <div><strong>Previsão Saída:</strong> {(currentScheduling.data as any)?.previsaoSaida || 'N/A'}</div>
-                      <div><strong>Liberação Refeitório:</strong> {(currentScheduling.data as any)?.liberacaoRefeitorio ? 'Sim' : 'Não'}</div>
-                      <div><strong>Veículo:</strong> {[(currentScheduling.data as any)?.marcaVeiculo, (currentScheduling.data as any)?.modeloVeiculo, (currentScheduling.data as any)?.placa].filter(Boolean).join(' - ') || 'N/A'}</div>
-                      <div><strong>Portaria:</strong> {(currentScheduling.data as any)?.portariaAcesso || 'N/A'}</div>
-                      <div className="md:col-span-2"><strong>Motivo:</strong> {(currentScheduling.data as any)?.motivoVisita || 'N/A'}</div>
-                      <div className="md:col-span-2"><strong>Considerado Como Visita:</strong> {(currentScheduling.data as any)?.consideradoComoVisita || 'N/A'}</div>
+                    <div className="space-y-4">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div><strong>Nome:</strong> {(currentScheduling.data as any)?.nomeCompleto || 'N/A'}</div>
+                        <div><strong>Empresa:</strong> {(currentScheduling.data as any)?.empresaVisitante || 'N/A'}</div>
+                        <div><strong>CPF:</strong> {(currentScheduling.data as any)?.cpf || 'N/A'}</div>
+                        <div><strong>Telefone:</strong> {(currentScheduling.data as any)?.telefone || 'N/A'}</div>
+                        <div><strong>Pessoa Visitada:</strong> {(currentScheduling.data as any)?.pessoaVisitada || 'N/A'}</div>
+                        <div><strong>Data Visita:</strong> {(currentScheduling.data as any)?.dataVisita || 'N/A'}</div>
+                        <div><strong>Previsão Chegada:</strong> {(currentScheduling.data as any)?.previsaoChegada || 'N/A'}</div>
+                        <div><strong>Previsão Saída:</strong> {(currentScheduling.data as any)?.previsaoSaida || 'N/A'}</div>
+                        <div><strong>Liberação Refeitório:</strong> {(currentScheduling.data as any)?.liberacaoRefeitorio ? 'Sim' : 'Não'}</div>
+                        <div><strong>Veículo:</strong> {[(currentScheduling.data as any)?.marcaVeiculo, (currentScheduling.data as any)?.modeloVeiculo, (currentScheduling.data as any)?.placa].filter(Boolean).join(' - ') || 'N/A'}</div>
+                        <div><strong>Portaria:</strong> {(currentScheduling.data as any)?.portariaAcesso || 'N/A'}</div>
+                        <div className="md:col-span-2"><strong>Motivo:</strong> {(currentScheduling.data as any)?.motivoVisita || 'N/A'}</div>
+                        <div className="md:col-span-2"><strong>Considerado Como Visita:</strong> {(currentScheduling.data as any)?.consideradoComoVisita || 'N/A'}</div>
+                      </div>
+                      
+                      {/* Exibir informações dos acompanhantes se existirem */}
+                      {(currentScheduling.data as any)?.acompanhantes && 
+                        Array.isArray((currentScheduling.data as any).acompanhantes) && 
+                        (currentScheduling.data as any).acompanhantes.length > 0 && (
+                        <div className="border-t pt-4">
+                          <h4 className="text-md font-semibold text-gray-800 mb-3">Acompanhantes ({(currentScheduling.data as any).acompanhantes.length}):</h4>
+                          <div className="space-y-3">
+                            {(currentScheduling.data as any).acompanhantes.map((acompanhante: any, index: number) => (
+                              <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                                  <div><strong>Nome:</strong> {acompanhante.nome || 'N/A'}</div>
+                                  <div><strong>CPF:</strong> {acompanhante.cpf || 'N/A'}</div>
+                                  <div><strong>RG:</strong> {acompanhante.rg || 'N/A'}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -668,7 +745,7 @@ const DashboardDiretor = () => {
 
       {/* Modal de Reprovação */}
       {selectedScheduling && !showDetailsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-55">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
             <div className="p-6 border-b">
               <h3 className="text-xl font-bold">💬 Adicionar Justificativa</h3>
@@ -705,11 +782,22 @@ const DashboardDiretor = () => {
 
       {/* Histórico Modal com abas */}
       {showHistoryModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-40">
           <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full mx-4 my-10 max-h-[85vh] overflow-y-auto">
             <div className="p-4 border-b flex justify-between items-center">
               <h3 className="text-xl font-bold">📚 Histórico de Solicitações</h3>
               <div className="flex items-center space-x-3">
+                <button 
+                  onClick={async () => {
+                    if (window.confirm('Tem certeza que deseja limpar todo o histórico? Esta ação não pode ser desfeita.')) {
+                      await clearHistory();
+                      closeHistoryModal();
+                    }
+                  }} 
+                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+                >
+                  🗑️ Limpar Histórico
+                </button>
                 <div className="text-sm text-gray-600">Total: {schedulings.length}</div>
                 <button onClick={closeHistoryModal} className="text-gray-500 hover:text-gray-700">✕</button>
               </div>
@@ -729,10 +817,21 @@ const DashboardDiretor = () => {
                   <div>
                     {approvedList.length === 0 ? <p className="text-gray-600">Nenhum agendamento aprovado.</p> : (
                       modalApprovedList.map(s => (
-                        <div key={s.id} className="p-3 bg-white rounded mb-2 border">
+                        <div 
+                          key={s.id} 
+                          className="p-3 bg-white rounded mb-2 border cursor-pointer hover:bg-gray-50"
+                          onClick={() => {
+                            setCurrentScheduling(s);
+                            setShowDetailsModal(true);
+                            setShowHistoryModal(false);
+                          }}
+                        >
                           <div className="flex justify-between">
                             <div>
-                              <div className="text-sm text-gray-500">{getSchedulingTypeLabel(s.type)}</div>
+                              <div className="text-sm text-gray-500">{getSchedulingTypeLabel(s.type)} 
+                                {(s.data as any)?.acompanhantes && (s.data as any).acompanhantes.length > 0 
+                                  ? ` (+${(s.data as any).acompanhantes.length} acomp.)` : ''}
+                              </div>
                               <div className="font-semibold">{getSchedulingName(s)}</div>
                               <div className="text-xs text-gray-600">Empresa: {getSchedulingCompany(s)} | Solicitante: {s.requestedByName}</div>
                             </div>
@@ -748,10 +847,21 @@ const DashboardDiretor = () => {
                   <div>
                     {rejectedList.length === 0 ? <p className="text-gray-600">Nenhum agendamento reprovado.</p> : (
                       modalRejectedList.map(s => (
-                        <div key={s.id} className="p-3 bg-white rounded mb-2 border">
+                        <div 
+                          key={s.id} 
+                          className="p-3 bg-white rounded mb-2 border cursor-pointer hover:bg-gray-50"
+                          onClick={() => {
+                            setCurrentScheduling(s);
+                            setShowDetailsModal(true);
+                            setShowHistoryModal(false);
+                          }}
+                        >
                           <div className="flex justify-between">
                             <div>
-                              <div className="text-sm text-gray-500">{getSchedulingTypeLabel(s.type)}</div>
+                              <div className="text-sm text-gray-500">{getSchedulingTypeLabel(s.type)} 
+                                {(s.data as any)?.acompanhantes && (s.data as any).acompanhantes.length > 0 
+                                  ? ` (+${(s.data as any).acompanhantes.length} acomp.)` : ''}
+                              </div>
                               <div className="font-semibold">{getSchedulingName(s)}</div>
                               <div className="text-xs text-gray-600">Empresa: {getSchedulingCompany(s)} | Justificativa: {s.observacoes || 'Nenhuma'}</div>
                             </div>
@@ -767,10 +877,21 @@ const DashboardDiretor = () => {
                   <div>
                     {attendedList.length === 0 ? <p className="text-gray-600">Nenhum registro de comparecimento.</p> : (
                       modalAttendedList.map(s => (
-                        <div key={s.id} className="p-3 bg-white rounded mb-2 border">
+                        <div 
+                          key={s.id} 
+                          className="p-3 bg-white rounded mb-2 border cursor-pointer hover:bg-gray-50"
+                          onClick={() => {
+                            setCurrentScheduling(s);
+                            setShowDetailsModal(true);
+                            setShowHistoryModal(false);
+                          }}
+                        >
                           <div className="flex justify-between">
                             <div>
-                              <div className="text-sm text-gray-500">{getSchedulingTypeLabel(s.type)}</div>
+                              <div className="text-sm text-gray-500">{getSchedulingTypeLabel(s.type)} 
+                                {(s.data as any)?.acompanhantes && (s.data as any).acompanhantes.length > 0 
+                                  ? ` (+${(s.data as any).acompanhantes.length} acomp.)` : ''}
+                              </div>
                               <div className="font-semibold">{getSchedulingName(s)}</div>
                               <div className="text-xs text-gray-600">Empresa: {getSchedulingCompany(s)} | Entrada: {new Date((s as any).checkInAt).toLocaleString('pt-BR')}</div>
                             </div>
@@ -786,10 +907,21 @@ const DashboardDiretor = () => {
                   <div>
                     {notAttendedList.length === 0 ? <p className="text-gray-600">Nenhum registro de não comparecimento.</p> : (
                       modalNotAttendedList.map(s => (
-                        <div key={s.id} className="p-3 bg-white rounded mb-2 border">
+                        <div 
+                          key={s.id} 
+                          className="p-3 bg-white rounded mb-2 border cursor-pointer hover:bg-gray-50"
+                          onClick={() => {
+                            setCurrentScheduling(s);
+                            setShowDetailsModal(true);
+                            setShowHistoryModal(false);
+                          }}
+                        >
                           <div className="flex justify-between">
                             <div>
-                              <div className="text-sm text-gray-500">{getSchedulingTypeLabel(s.type)}</div>
+                              <div className="text-sm text-gray-500">{getSchedulingTypeLabel(s.type)} 
+                                {(s.data as any)?.acompanhantes && (s.data as any).acompanhantes.length > 0 
+                                  ? ` (+${(s.data as any).acompanhantes.length} acomp.)` : ''}
+                              </div>
                               <div className="font-semibold">{getSchedulingName(s)}</div>
                               <div className="text-xs text-gray-600">Empresa: {getSchedulingCompany(s)} | Registrado: {new Date((s as any).checkInAt).toLocaleString('pt-BR')}</div>
                             </div>

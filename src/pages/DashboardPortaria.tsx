@@ -25,9 +25,19 @@ const DashboardPortaria = () => {
   // Funções Auxiliares (movidas para cima para uso no useMemo)
   const getSchedulingName = (scheduling: any): string => {
     if (scheduling.type === 'servicos-avulsos') {
-      return scheduling.data?.nomeFuncionario || 'Solicitação de Serviço';
+      const baseName = scheduling.data?.nomeFuncionario || 'Solicitação de Serviço';
+      const acompanhantes = scheduling.data?.acompanhantes;
+      if (acompanhantes && Array.isArray(acompanhantes) && acompanhantes.length > 0) {
+        return `${baseName} (+${acompanhantes.length} acomp.)`;
+      }
+      return baseName;
     } else if (scheduling.type === 'visitas') {
-      return scheduling.data?.nomeCompleto || 'Solicitação de Visita';
+      const baseName = scheduling.data?.nomeCompleto || 'Solicitação de Visita';
+      const acompanhantes = scheduling.data?.acompanhantes;
+      if (acompanhantes && Array.isArray(acompanhantes) && acompanhantes.length > 0) {
+        return `${baseName} (+${acompanhantes.length} acomp.)`;
+      }
+      return baseName;
     } else if (scheduling.type === 'entrega-liberacao') {
       return scheduling.data?.nomeMotorista || 'Solicitação de Entrega';
     } else if (scheduling.type === 'integracao') {
