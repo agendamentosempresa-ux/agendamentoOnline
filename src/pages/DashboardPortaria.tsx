@@ -467,19 +467,42 @@ const DashboardPortaria = () => {
                   </>
                 ) : (
                   // Conteúdo para outros tipos de agendamento
-                  <div className="grid md:grid-cols-2 gap-4 text-sm p-4 bg-white border rounded-lg">
-                    <div><strong>Tipo:</strong> {getSchedulingTypeLabel(currentScheduling.type)}</div>
-                    <div><strong>Status:</strong> {getStatusDisplay(currentScheduling.checkInStatus || currentScheduling.status)}</div>
-                    <div><strong>Pessoa/Motorista:</strong> {getSchedulingName(currentScheduling)}</div>
-                    <div><strong>Empresa:</strong> {getSchedulingCompany(currentScheduling)}</div>
-                    <div><strong>CPF/RG:</strong> {currentScheduling.data?.cpf || currentScheduling.data?.identidade || 'N/A'}</div>
-                    <div><strong>Telefone:</strong> {currentScheduling.data?.telefone || 'N/A'}</div>
-                    <div><strong>Veículo:</strong> {currentScheduling.data?.marcaVeiculo || currentScheduling.data?.tipoVeiculo || 'N/A'} {currentScheduling.data?.placa || currentScheduling.data?.placaVeiculo || ''}</div>
-                    <div><strong>Portaria:</strong> {currentScheduling.data?.portariaAcesso || 'N/A'}</div>
-                    <div><strong>Data/Hora Prevista:</strong> {new Date(currentScheduling.createdAt).toLocaleDateString('pt-BR')} {currentScheduling.data?.horaInicio || currentScheduling.data?.horario || currentScheduling.data?.previsaoChegada || currentScheduling.data?.horarioChegada || 'N/A'}</div>
-                    <div className="md:col-span-2"><strong>Motivo:</strong> {currentScheduling.data?.motivoServico || currentScheduling.data?.motivoVisita || currentScheduling.data?.motivoEntrega || currentScheduling.data?.motivoLiberacao || 'N/A'}</div>
-                    {currentScheduling.data?.responsavelHSSE && (
-                      <div className="md:col-span-2 text-yellow-600 font-medium">🛡️ Acompanhamento obrigatório do técnico de segurança</div>
+                  <div className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4 text-sm p-4 bg-white border rounded-lg">
+                      <div><strong>Tipo:</strong> {getSchedulingTypeLabel(currentScheduling.type)}</div>
+                      <div><strong>Status:</strong> {getStatusDisplay(currentScheduling.checkInStatus || currentScheduling.status)}</div>
+                      <div><strong>Pessoa/Motorista:</strong> {getSchedulingName(currentScheduling)}</div>
+                      <div><strong>Empresa:</strong> {getSchedulingCompany(currentScheduling)}</div>
+                      <div><strong>CPF/RG:</strong> {currentScheduling.data?.cpf || currentScheduling.data?.identidade || 'N/A'}</div>
+                      <div><strong>Telefone:</strong> {currentScheduling.data?.telefone || 'N/A'}</div>
+                      <div><strong>Veículo:</strong> {currentScheduling.data?.marcaVeiculo || currentScheduling.data?.tipoVeiculo || 'N/A'} {currentScheduling.data?.placa || currentScheduling.data?.placaVeiculo || ''}</div>
+                      <div><strong>Portaria:</strong> {currentScheduling.data?.portariaAcesso || 'N/A'}</div>
+                      <div><strong>Data/Hora Prevista:</strong> {new Date(currentScheduling.createdAt).toLocaleDateString('pt-BR')} {currentScheduling.data?.horaInicio || currentScheduling.data?.horario || currentScheduling.data?.previsaoChegada || currentScheduling.data?.horarioChegada || 'N/A'}</div>
+                      <div className="md:col-span-2"><strong>Motivo:</strong> {currentScheduling.data?.motivoServico || currentScheduling.data?.motivoVisita || currentScheduling.data?.motivoEntrega || currentScheduling.data?.motivoLiberacao || 'N/A'}</div>
+                      {currentScheduling.data?.responsavelHSSE && (
+                        <div className="md:col-span-2 text-yellow-600 font-medium">🛡️ Acompanhamento obrigatório do técnico de segurança</div>
+                      )}
+                    </div>
+                    
+                    {/* Exibir informações dos acompanhantes se existirem */}
+                    {(currentScheduling.type === 'servicos-avulsos' || currentScheduling.type === 'visitas') && 
+                      (currentScheduling.data as any)?.acompanhantes && 
+                      Array.isArray((currentScheduling.data as any).acompanhantes) && 
+                      (currentScheduling.data as any).acompanhantes.length > 0 && (
+                      <div className="border-t pt-4">
+                        <h4 className="text-md font-semibold text-gray-800 mb-3">Acompanhantes ({(currentScheduling.data as any).acompanhantes.length}):</h4>
+                        <div className="space-y-3">
+                          {(currentScheduling.data as any).acompanhantes.map((acompanhante: any, index: number) => (
+                            <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                                <div><strong>Nome:</strong> {acompanhante.nome || 'N/A'}</div>
+                                <div><strong>CPF:</strong> {acompanhante.cpf || 'N/A'}</div>
+                                <div><strong>RG:</strong> {acompanhante.rg || 'N/A'}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}

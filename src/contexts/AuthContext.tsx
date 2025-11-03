@@ -1,4 +1,4 @@
-// AuthContext.tsx
+﻿// AuthContext.tsx
 
 import React, { createContext, useState, useContext, useEffect, ReactNode, useRef } from 'react';
 import { User } from '@supabase/supabase-js';
@@ -88,13 +88,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Profile found by email, but ID doesn't match - this means there's a mismatch
         const profileByEmail = profilesByEmail[0];
         console.log('Profile found by email but ID mismatch, user ID:', supabaseUser.id, 'profile ID:', profileByEmail.id);
-        
+
         // Update the profile in the local object to match the auth user ID
         profile = { ...profileByEmail, id: supabaseUser.id };
       } else {
         // No profile found - create a default one
         console.log('No profile found, creating default profile for:', supabaseUser.email);
-        
+
         // Create a default profile with 'solicitante' role as fallback
         const defaultProfile = {
           full_name: supabaseUser.email?.split('@')[0] || 'Usuário', // Use part of email as name
@@ -102,7 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           email: supabaseUser.email,
           id: supabaseUser.id
         };
-        
+
         // Add to the profiles table
         const { error: insertError } = await supabase
           .from('profiles')
@@ -121,7 +121,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             .select('full_name, role, id')
             .eq('id', supabaseUser.id)
             .single();
-            
+
           if (retryError || !retryProfiles) {
             console.error('Retry also failed:', retryError?.message);
             return null;
@@ -163,7 +163,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           ip_address: 'CLIENT_IP', // In a real app, get from server
           user_agent: navigator.userAgent
         }]);
-      
+
       if (error) {
         console.error('Error logging activity:', error);
       }
@@ -176,13 +176,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     try {
       let data, error;
-      
+
       // Try admin client first for admin users, fallback to regular client
       if (supabaseAdmin && user && (user.role === 'admin' || user.role === 'diretoria')) {
         ({ data, error } = await supabaseAdmin
           .from('profiles')
           .select('id, full_name, email, role'));
-          
+
         // If admin client fails, try regular client
         if (error) {
           console.warn('Admin client failed, falling back to regular client:', error);
@@ -225,7 +225,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchLogs = async (limit: number = 50) => {
     try {
       let data, error;
-      
+
       // Try admin client first, then regular client
       if (supabaseAdmin) {
         ({ data, error } = await supabaseAdmin
@@ -243,7 +243,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           `)
           .order('created_at', { ascending: false })
           .limit(limit));
-        
+
         // If admin client fails, try regular client
         if (error) {
           console.warn('Admin client failed for logs, falling back to regular client:', error);
@@ -307,13 +307,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       // Get the number of users who logged in today
       const today = new Date().toISOString().split('T')[0];
-      
+
       let accessCount = 0, scheduleCount = 0, pendingCount = 0;
       let accessError, scheduleError, pendingError;
 
       // Try admin client first, then regular client
       let clientToUse = supabaseAdmin || supabase;
-      
+
       ({ count: accessCount, error: accessError } = await clientToUse
         .from('logs')
         .select('*', { count: 'exact', head: true })
@@ -464,7 +464,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (authError) {
         console.error('Erro ao deletar usuário do Auth:', authError);
-        
+
         // Try to delete just the profile if auth deletion fails
         const { error: profileError } = await supabase
           .from('profiles')
@@ -516,7 +516,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (user && (user.role === 'admin' || user.role === 'diretoria')) {
       await fetchUsers();
     }
-    
+
     // Log the user update activity
     if (user) {
       await logActivity(user.id, 'UPDATE_USER', `User ${user.name} updated profile for user ID: ${id}`);
@@ -532,7 +532,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { error } = await supabaseAdmin.auth.admin.updateUserById(id, {
         password: newPassword
       });
-      
+
       if (error) {
         console.error('Erro ao atualizar senha:', error);
         throw error;
@@ -561,7 +561,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string): Promise<boolean> => {
     console.log('AuthContext login called with:', email);
     isLoginInProgress.current = true;
-    
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       console.log('Supabase auth result:', { data: !!data, error });
@@ -579,18 +579,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (authUser) {
           console.log('Login successful, user:', authUser);
           setUser(authUser);
-          
+
           // Log the login activity
           await logActivity(authUser.id, 'LOGIN', `User ${authUser.name} logged in successfully`);
-          
+
           // Immediately fetch users data if user is admin or diretoria
           if (authUser.role === 'admin' || authUser.role === 'diretoria') {
             await fetchUsers();
           }
-          
+
           // Wait a brief moment to ensure state propagates before navigation
           await new Promise(resolve => setTimeout(resolve, 200));
-          
+
           return true;
         } else {
           console.error('Failed to get user profile - profile might not exist');
@@ -625,12 +625,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let authSubscription: any = null;
-    
+
     const initializeAuth = async () => {
       try {
         const { data: { user: supabaseUser } } = await supabase.auth.getUser();
         console.log('Initial user check result:', { supabaseUser: !!supabaseUser });
-        
+
         if (supabaseUser) {
           const authUser = await getProfile(supabaseUser);
           console.log('Initial getProfile result:', authUser);
@@ -650,14 +650,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data: subscription } = supabase.auth.onAuthStateChange(
         async (event, session) => {
           console.log('Auth state change:', event, !!session?.user);
-          
+
           if (event === 'SIGNED_IN' && session?.user) {
             // Skip updating user if a login is already in progress to avoid conflicts
             if (isLoginInProgress.current) {
               console.log('Login in progress, skipping auth state change update');
               return;
             }
-            
+
             try {
               const authUser = await getProfile(session.user);
               console.log('Auth state change getProfile result:', authUser);
@@ -682,7 +682,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       );
-      
+
       authSubscription = subscription;
     };
 
