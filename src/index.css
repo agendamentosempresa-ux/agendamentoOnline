@@ -17,7 +17,7 @@
     /* PETRONAS Primary - Deep Teal/Blue */
     --primary: 186 65% 25%;
     --primary-foreground: 0 0% 100%;
-    
+
     /* PETRONAS Secondary - Bright Green accent */
     --secondary: 142 76% 36%;
     --secondary-foreground: 0 0% 100%;
@@ -41,7 +41,7 @@
     --status-pending: 45 93% 47%;
     --status-approved: 142 76% 36%;
     --status-rejected: 0 84% 60%;
-    
+
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(186 65% 25%), hsl(186 65% 35%));
     --gradient-secondary: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
@@ -82,6 +82,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
