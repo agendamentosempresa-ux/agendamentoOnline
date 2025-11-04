@@ -1,3 +1,7 @@
+/* Import do seu CSS externo primeiro */
+@import "./assets/Dir.css";
+
+/* Tailwind */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
