@@ -394,26 +394,88 @@ const DashboardDiretor = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-200">
       {/* Header */}
       <div className="gradient-bg bg-gradient-to-br from-blue-800 to-blue-600 text-white py-6">
         <div className="max-w-6xl mx-auto px-4">
-          <h1 className="text-3xl font-bold text-center mb-2">🏢 Sistema de Agendamentos </h1>
-          <p className="text-center text-blue-100">Gestão Completa de Acessos e Autorizações</p>
+          <h1
+            className="text-4xl font-bold text-center mb-2 text-white relative animate-glow"
+          >
+            🏢 Sistema de Agendamentos
+          </h1>
+
+          <style>
+            {`
+@keyframes glow {
+  0%, 100% { text-shadow: 0 0 8px #00ffcc, 0 0 16px #00ffcc; }
+  50% { text-shadow: 0 0 2px #00ffcc, 0 0 6px #00ffcc; }
+}
+.animate-glow {
+  animation: glow 2.5s ease-in-out infinite;
+}
+`}
+          </style>
+
+          <p className="text-center text-blue-100 font-bold">Gestão Completa de Acessos e Autorizações</p>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h2 className="text-3xl font-bold text-gray-800 flex items-center">
-              <span className="text-4xl mr-3">👔</span>
-              Dashboard Diretoria
+            <h2 className="flex items-center justify-start text-3xl font-bold text-gray-800">
+              <div className="title-glow-static">
+                <div className="title-glow-inner border border-gray-700">
+                  Painel de Diretores
+                </div>
+              </div>
             </h2>
-            <p className="text-gray-600">Bem-vindo, <span className="font-semibold">{user?.name || 'Diretor'}</span></p>
+
+
+
+            <p className="text-gray-700 font-bold">Bem-vindo Diretor(a), <span className="font-semibold">{user?.name || 'Diretor'}</span></p>
           </div>
           <div className="flex space-x-3">
-            <button onClick={handleExportXLSX} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">Exportar</button>
+            <button onClick={handleExportXLSX} className="btn-export">
+              <div className="docs">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="svgIcon"
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Exportar
+              </div>
+              <div className="download">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="svgIcon"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+              </div>
+            </button>
+
             <button onClick={() => setShowHistoryModal(true)} className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg">Histórico</button>
             <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">Sair</button>
           </div>
@@ -421,26 +483,26 @@ const DashboardDiretor = () => {
 
         {/* Indicadores */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <div onClick={handleClickPendentes} className="bg-white rounded-lg shadow p-6 text-center cursor-pointer">
+          <div onClick={handleClickPendentes} className="bg-white border-2 border-gray-400 rounded-lg shadow p-6 text-center cursor-pointer">
             <div className="text-3xl font-bold text-yellow-600">{pendingSchedulings.length}</div>
-            <div className="text-sm text-gray-600">Pendentes</div>
+            <div className="text-sm text-gray-800">Pendentes</div>
           </div>
-          <div onClick={handleClickAprovadosHoje} className="bg-white rounded-lg shadow p-6 text-center cursor-pointer">
+          <div onClick={handleClickAprovadosHoje} className="bg-white border-2 border-gray-400 rounded-lg shadow p-6 text-center cursor-pointer">
             <div className="text-3xl font-bold text-green-600">{approvedToday}</div>
-            <div className="text-sm text-gray-600">Aprovados Hoje</div>
+            <div className="text-sm text-gray-800">Aprovados Hoje</div>
           </div>
-          <div onClick={handleClickReprovados} className="bg-white rounded-lg shadow p-6 text-center cursor-pointer">
+          <div onClick={handleClickReprovados} className="bg-white border-2 border-gray-400 rounded-lg shadow p-6 text-center cursor-pointer">
             <div className="text-3xl font-bold text-red-600">{rejectedTotal}</div>
-            <div className="text-sm text-gray-600">Reprovados</div>
+            <div className="text-sm text-gray-800">Reprovados</div>
           </div>
-          <div onClick={handleClickTaxa} className="bg-white rounded-lg shadow p-6 text-center cursor-pointer">
+          <div onClick={handleClickTaxa} className="bg-white border-2 border-gray-400 rounded-lg shadow p-6 text-center cursor-pointer">
             <div className="text-3xl font-bold text-blue-600">{approvalRate}</div>
-            <div className="text-sm text-gray-600">Taxa Aprovação</div>
+            <div className="text-sm text-gray-800">Taxa Aprovação</div>
           </div>
         </div>
 
         {/* Filtros */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-white border-2 border-gray-400 rounded-lg shadow p-6 mb-6">
           <div className="grid md:grid-cols-4 gap-4">
             <select
               className="px-3 py-2 border border-gray-300 rounded-lg"
@@ -480,11 +542,11 @@ const DashboardDiretor = () => {
         </div>
 
         {/* Lista de Agendamentos Pendentes */}
-        <div className="bg-white rounded-lg shadow" ref={pendingRef}>
+        <div className="bg-white border-2 border-gray-400 rounded-lg shadow" ref={pendingRef}>
           <div className="p-6 border-b flex justify-between items-center">
             <h3 className="text-xl font-bold text-gray-800">🔔 Solicitações Pendentes de Aprovação</h3>
           </div>
-          <div className="divide-y">
+          <div className="divide-y-2">
             {pendingSchedulings.length === 0 ? (
               <div className="p-8 text-center">
                 <p className="text-gray-600">Nenhuma solicitação pendente</p>
@@ -507,24 +569,38 @@ const DashboardDiretor = () => {
                       <p className="text-gray-600">📅 {new Date(scheduling.createdAt).toLocaleDateString('pt-BR')} | ⏰ {getSchedulingTime(scheduling)} | 🚧 {getSchedulingGate(scheduling)}</p>
                     </div>
                     <div className="flex space-x-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          showDetails(scheduling);
-                        }}
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">🔍 Detalhes</button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleApprove(scheduling.id);
-                        }}
-                        className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">👍 Aprovar</button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedScheduling(scheduling.id);
-                        }}
-                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">👎 Reprovar</button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            showDetails(scheduling);
+                          }}
+                          className="bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium border-2 border-blue-900 transition-colors hover:bg-blue-600 hover:border-blue-700"
+                        >
+                          🔍 Detalhes
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleApprove(scheduling.id);
+                          }}
+                          className="bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-medium border-2 border-green-900 transition-colors hover:bg-green-600 hover:border-green-700"
+                        >
+                          👍 Aprovar
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedScheduling(scheduling.id);
+                          }}
+                          className="bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-medium border-2 border-red-900 transition-colors hover:bg-red-600 hover:border-red-700"
+                        >
+                          👎 Reprovar
+                        </button>
+                      </div>
+
                     </div>
                   </div>
                 </div>
@@ -537,7 +613,7 @@ const DashboardDiretor = () => {
       {/* Modal de Detalhes */}
       {showDetailsModal && currentScheduling && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white border border-gray-700 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b">
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-bold">🔍 Detalhes da Solicitação</h3>
@@ -554,16 +630,16 @@ const DashboardDiretor = () => {
               {/* CORREÇÃO: Renderiza a tabela de integrantes se for Integração */}
               {currentScheduling.type === 'integracao' && 'integrantes' in currentScheduling.data && Array.isArray(currentScheduling.data.integrantes) && currentScheduling.data.integrantes.length > 0 ? (
                 <>
-                  <div className="mb-4">
+                  <div className="mb-4 ">
                     <h4 className="text-lg font-bold text-gray-800 mb-2">Pessoas para Integração ({currentScheduling.data.integrantes.length}):</h4>
-                    <div className="border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
+                    <div className="border border-gray-700 rounded-lg max-h-40 overflow-y-auto">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50 sticky top-0">
                           <tr>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Empresa</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RG</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPF</th>
+                            <th className="px-3  py-2 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">Nome</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">Empresa</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">RG</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">CPF</th>
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -580,7 +656,7 @@ const DashboardDiretor = () => {
                     </div>
                   </div>
                   {/* Detalhes específicos de Integração */}
-                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                  <div className="grid border border-gray-700 rounded-sm md:grid-cols-2 gap-4 text-sm">
                     <div><strong>Tipo:</strong> {getSchedulingTypeLabel(currentScheduling.type)}</div>
                     <div><strong>Urgência:</strong> {isEmergencial(currentScheduling) ? 'Emergencial' : 'Normal'}</div>
                     <div><strong>Responsável:</strong> {currentScheduling.requestedByName}</div>
@@ -733,9 +809,9 @@ const DashboardDiretor = () => {
 
               {!isHistoryDetail && (
                 <div className="mt-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">💬 Justificativa da Decisão:</label>
+                  <label className="block text-sm font-medium text-black-700 mb-2">Justificativa da Decisão:</label>
                   <textarea
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-700 rounded-lg"
                     rows={3}
                     placeholder="Digite sua justificativa..."
                     value={comment}
@@ -804,16 +880,23 @@ const DashboardDiretor = () => {
               <div className="flex items-center space-x-3">
                 <button
                   onClick={async () => {
-                    if (window.confirm('Tem certeza que deseja limpar todo o histórico? Esta ação não pode ser desfeita.')) {
+                    if (
+                      window.confirm(
+                        'Tem certeza que deseja limpar todo o histórico? Esta ação não pode ser desfeita.'
+                      )
+                    ) {
                       await clearHistory();
                       closeHistoryModal();
                     }
                   }}
-                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+                  className="btn-delete"
                 >
-                  🗑️ Limpar Histórico
+                  <svg viewBox="0 0 448 512" className="svgIcon">
+                    <path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"></path>
+                  </svg>
                 </button>
-                <div className="text-sm text-gray-600">Total: {schedulings.length}</div>
+
+                <div className="text-sm text-gray-900 text-base font-bold">Total: {schedulings.length}</div>
                 <button onClick={closeHistoryModal} className="text-gray-500 hover:text-gray-700">✕</button>
               </div>
             </div>

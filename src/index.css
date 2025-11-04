@@ -1,3 +1,6 @@
+@import "./assets/Dir.css";
+/* 👈 Import primeiro! */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -76,9 +79,7 @@
     --input: 210 30% 22%;
     --ring: 186 65% 35%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
