@@ -48,6 +48,7 @@ interface AuthContextType {
   fetchStatistics: () => Promise<Statistics>; // Fetch statistics
   updateUserPassword: (id: string, newPassword: string) => Promise<void>; // Update user password
   clearLogs: () => Promise<void>; // Clear all system logs
+  cleanOldLogs: () => Promise<void>; // Clean logs older than 24 hours
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -225,6 +226,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Function to fetch logs
   const fetchLogs = async (limit: number = 50) => {
     try {
+      // Automatically clean old logs when fetching logs
+      await cleanOldLogs();
+
       let data, error;
 
       // Try admin client first, then regular client
@@ -339,6 +343,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('Logs limpos com sucesso');
     } catch (error) {
       console.error('Unexpected error during clearLogs:', error);
+      throw error;
+    }
+  };
+
+  // Function to clean old logs (older than 24 hours)
+  const cleanOldLogs = async () => {
+    try {
+      let error;
+
+      // Calculate date 24 hours ago
+      const date24HoursAgo = new Date();
+      date24HoursAgo.setHours(date24HoursAgo.getHours() - 24);
+      const date24HoursAgoISO = date24HoursAgo.toISOString();
+
+      // Try admin client first, then regular client
+      if (supabaseAdmin) {
+        const { error: adminError } = await supabaseAdmin
+          .from('logs')
+          .delete()
+          .lt('created_at', date24HoursAgoISO); // Delete logs older than 24 hours
+
+        if (adminError) {
+          console.warn('Admin client failed for cleanOldLogs, falling back to regular client:', adminError);
+          const { error: regularError } = await supabase
+            .from('logs')
+            .delete()
+            .lt('created_at', date24HoursAgoISO); // Delete logs older than 24 hours
+          error = regularError;
+        }
+      } else {
+        const { error: regularError } = await supabase
+          .from('logs')
+          .delete()
+          .lt('created_at', date24HoursAgoISO); // Delete logs older than 24 hours
+        error = regularError;
+      }
+
+      if (error) {
+        console.error('Erro ao limpar logs antigos:', error);
+        throw error;
+      }
+
+      console.log('Logs antigos limpos com sucesso');
+    } catch (error) {
+      console.error('Unexpected error during cleanOldLogs:', error);
       throw error;
     }
   };
@@ -666,8 +715,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let authSubscription: any = null;
+    let logCleanupInterval: NodeJS.Timeout | null = null;
 
     const initializeAuth = async () => {
+      // Function to run automatic cleanup of old logs
+      const startAutomaticLogCleanup = () => {
+        // Run cleanup immediately
+        cleanOldLogs().catch(error => console.error('Error during initial log cleanup:', error));
+        
+        // Schedule cleanup every 24 hours (24 * 60 * 60 * 1000 = 86400000 ms)
+        logCleanupInterval = setInterval(() => {
+          cleanOldLogs().catch(error => console.error('Error during scheduled log cleanup:', error));
+        }, 24 * 60 * 60 * 1000); // Every 24 hours
+      };
+
+      // Start automatic cleanup
+      startAutomaticLogCleanup();
+
       try {
         const { data: { user: supabaseUser } } = await supabase.auth.getUser();
         console.log('Initial user check result:', { supabaseUser: !!supabaseUser });
@@ -720,6 +784,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             isLoginInProgress.current = false;
             setUser(null);
             setUsers([]);
+            
+            // When user signs out, also clear the interval
+            if (logCleanupInterval) {
+              clearInterval(logCleanupInterval);
+              logCleanupInterval = null;
+            }
           }
         }
       );
@@ -733,6 +803,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       if (authSubscription) {
         authSubscription.subscription.unsubscribe();
+      }
+      if (logCleanupInterval) {
+        clearInterval(logCleanupInterval);
       }
     };
   }, []);
@@ -753,6 +826,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     fetchLogs,
     fetchStatistics,
     clearLogs,
+    cleanOldLogs,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -461,26 +461,6 @@ const DashboardSolicitante = () => {
               {/* Campos atualizados para serviços avulsos conforme solicitação */}
               <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Nome</label>
-                  <input
-                    type="text"
-                    value={solicitationName}
-                    onChange={(e) => setSolicitationName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    placeholder="Nome do funcionário"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Empresa</label>
-                  <input
-                    type="text"
-                    value={solicitationCompany}
-                    onChange={(e) => setSolicitationCompany(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    placeholder="Empresa prestadora"
-                  />
-                </div>
-                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Responsável</label>
                   <input
                     type="text"
@@ -796,17 +776,6 @@ const DashboardSolicitante = () => {
           {/* Adiciona bloco de campos para Visitas (V3) */}
           {solicitationType === 'visitas' && (
             <>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">👤 Nome completo do visitante:</label>
-                <input
-                  type="text"
-                  value={solicitationName}
-                  onChange={(e) => setSolicitationName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  placeholder="Nome completo"
-                />
-              </div>
-
               <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">📄 CPF:</label>
@@ -835,7 +804,7 @@ const DashboardSolicitante = () => {
                     value={solicitationCompany}
                     onChange={(e) => setSolicitationCompany(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    placeholder="Empresa"
+                    placeholder="Empresa visitante"
                   />
                 </div>
               </div>
