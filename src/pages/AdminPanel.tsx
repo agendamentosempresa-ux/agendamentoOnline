@@ -64,7 +64,7 @@ export default function AdminPanel() {
     if (window.confirm('Tem certeza que deseja excluir este usuário?')) {
       try {
         await deleteUser(id);
-        
+
         toast({
           title: "Sucesso!",
           description: 'Usuário deletado com sucesso!',
@@ -237,9 +237,9 @@ export default function AdminPanel() {
                       <td className="px-4 py-2">{userRecord.user.email}</td>
                       <td className="px-4 py-2">
                         <span className={`${userRecord.user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                            userRecord.user.role === 'diretoria' ? 'bg-red-100 text-red-800' :
-                              userRecord.user.role === 'solicitante' ? 'bg-blue-100 text-blue-800' :
-                                'bg-green-100 text-green-800'
+                          userRecord.user.role === 'diretoria' ? 'bg-red-100 text-red-800' :
+                            userRecord.user.role === 'solicitante' ? 'bg-blue-100 text-blue-800' :
+                              'bg-green-100 text-green-800'
                           } px-2 py-1 rounded text-xs`}>
                           {userRecord.user.role === 'admin' ? '🛡️ Admin' :
                             userRecord.user.role === 'diretoria' ? '👔 Diretoria' :

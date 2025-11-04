@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-//import '../Loader.css';
+import '../assets/Loading.css';
 
 // 1. Definição de Tipos para garantir type-safety e clareza
 type UserRole = 'admin' | 'diretoria' | 'solicitante' | 'portaria';
@@ -244,7 +244,7 @@ const DashboardAdmin = () => {
             <span className="text-4xl mr-3">🛡️</span>
             Painel Administrativo
           </h2>
-          <p className="text-gray-600">Bem-vindo, <span className="font-semibold">{user?.name || 'Administrador'}</span>. Seu perfil: <span className="font-semibold text-purple-600">{user?.role?.toUpperCase()}</span></p>
+          <p className="text-gray-800">Bem-vindo, <span className="font-semibold">{user?.name || 'Administrador'}</span>. Seu perfil: <span className="font-semibold text-purple-600">{user?.role?.toUpperCase()}</span></p>
         </div>
         <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">Sair</button>
       </div>
@@ -259,7 +259,7 @@ const DashboardAdmin = () => {
             <span className="text-3xl mr-4">➕</span>
             <div>
               <h3 className="text-xl font-bold text-gray-800">Criar Novo Usuário</h3>
-              <p className="text-gray-600 text-sm">Adicionar um novo acesso ao sistema</p>
+              <p className="text-gray-800 text-sm">Adicionar um novo acesso ao sistema</p>
             </div>
           </div>
         </div>
@@ -272,7 +272,7 @@ const DashboardAdmin = () => {
             <span className="text-3xl mr-4">📊</span>
             <div>
               <h3 className="text-xl font-bold text-gray-800">Relatórios</h3>
-              <p className="text-gray-600 text-sm">Logs e históricos completos</p>
+              <p className="text-gray-800 text-sm">Logs e históricos completos</p>
             </div>
           </div>
         </div>
@@ -280,40 +280,40 @@ const DashboardAdmin = () => {
 
       {/* Estatísticas Gerais (Atualizado para mostrar estatísticas reais do banco de dados) */}
       <div className="grid md:grid-cols-5 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow p-4 text-center">
+        <div className="bg-white border-2 border-gray-400 rounded-lg shadow p-4 text-center">
           <div className="text-2xl font-bold text-purple-600">
             {loadingStats ? '...' : users.reduce((count, user) => user.user.role === 'admin' ? count + 1 : count, 0)}
           </div>
-          <div className="text-xs text-gray-600">Administradores</div>
+          <div className="text-xs text-gray-800">Administradores</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4 text-center">
+        <div className="bg-white border-2 border-gray-400 rounded-lg shadow p-4 text-center">
           <div className="text-2xl font-bold text-red-600">
             {loadingStats ? '...' : users.reduce((count, user) => user.user.role === 'diretoria' ? count + 1 : count, 0)}
           </div>
-          <div className="text-xs text-gray-600">Diretores</div>
+          <div className="text-xs text-gray-800">Diretores</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4 text-center">
+        <div className="bg-white border-2 border-gray-400 rounded-lg shadow p-4 text-center">
           <div className="text-2xl font-bold text-blue-600">
             {loadingStats ? '...' : users.reduce((count, user) => user.user.role === 'solicitante' ? count + 1 : count, 0)}
           </div>
-          <div className="text-xs text-gray-600">Solicitantes</div>
+          <div className="text-xs text-gray-800">Solicitantes</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4 text-center">
+        <div className="bg-white border-2 border-gray-400 rounded-lg shadow p-4 text-center">
           <div className="text-2xl font-bold text-green-600">
             {loadingStats ? '...' : users.reduce((count, user) => user.user.role === 'portaria' ? count + 1 : count, 0)}
           </div>
-          <div className="text-xs text-gray-600">Portaria</div>
+          <div className="text-xs text-gray-800">Portaria</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4 text-center">
+        <div className="bg-white border-2 border-gray-400 rounded-lg shadow p-4 text-center">
           <div className="text-2xl font-bold text-yellow-600">
             {loadingStats ? '...' : statistics.scheduleCount}
           </div>
-          <div className="text-xs text-gray-600">Agendamentos</div>
+          <div className="text-xs text-gray-800">Agendamentos</div>
         </div>
       </div>
 
       {/* Gerenciamento de Usuários (Tabela no Dashboard) */}
-      <div className="bg-white rounded-lg shadow mb-6">
+      <div className="bg-white border-2 border-gray-400 rounded-lg shadow mb-6">
         <div className="p-6 border-b flex justify-between items-center">
           <h3 className="text-xl font-bold text-gray-800">👥 Gerenciamento de Usuários ({users.length})</h3>
           <button
@@ -374,7 +374,7 @@ const DashboardAdmin = () => {
       </div>
 
       {/* Logs do Sistema (Atualizado para mostrar logs reais do banco de dados) */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white border-2 border-gray-400 rounded-lg shadow">
         <div className="p-6 border-b">
           <h3 className="text-xl font-bold text-gray-800">📋 Logs Recentes do Sistema</h3>
         </div>
@@ -605,14 +605,167 @@ const DashboardAdmin = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 relative">
+    <div className="min-h-screen bg-gray-200">
       {/* Header */}
-      <div className="gradient-bg bg-gradient-to-br from-blue-800 to-blue-600 text-white py-6 relative z-10">
-        <div className="max-w-6xl mx-auto px-4">
-          <h1 className="text-3xl font-bold text-center mb-2">🏢 Sistema de Agendamentos</h1>
-          <p className="text-center text-blue-100">Gestão Completa de Acessos e Autorizações</p>
-        </div>
-      </div>
+      <div className="gradient-bg bg-gradient-to-br from-blue-300 to-blue-600 text-white py-6 relative z-10">
+        <div className="max-w-6xl mx-auto px-44">
+          <div className="main-container">
+            <div className="Loading">
+              <svg viewBox="-300 120 1400 255" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+                <defs>
+                  <linearGradient id="chipGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#2d2d2d"></stop>
+                    <stop offset="100%" stopColor="#0f0f0f"></stop>
+                  </linearGradient>
+
+                  <linearGradient id="textGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#eeeeee"></stop>
+                    <stop offset="100%" stopColor="#888888"></stop>
+                  </linearGradient>
+
+                  <linearGradient id="pinGradient" x1="1" y1="0" x2="0" y2="0">
+                    <stop offset="0%" stopColor="#bbbbbb"></stop>
+                    <stop offset="50%" stopColor="#888888"></stop>
+                    <stop offset="100%" stopColor="#555555"></stop>
+                  </linearGradient>
+                </defs>
+
+                <g id="traces">
+                  <path d="M100 100 H200 V210 H326" className="trace-bg"></path>
+                  <path d="M100 100 H200 V210 H326" className="trace-flow purple"></path>
+
+                  <path d="M80 180 H180 V230 H326" className="trace-bg"></path>
+                  <path d="M80 180 H180 V230 H326" className="trace-flow blue"></path>
+
+                  <path d="M60 260 H150 V250 H326" className="trace-bg"></path>
+                  <path d="M60 260 H150 V250 H326" className="trace-flow yellow"></path>
+
+                  <path d="M100 350 H200 V270 H326" className="trace-bg"></path>
+                  <path d="M100 350 H200 V270 H326" className="trace-flow green"></path>
+
+                  <path d="M700 90 H560 V210 H474" className="trace-bg"></path>
+                  <path d="M700 90 H560 V210 H474" className="trace-flow blue"></path>
+
+                  <path d="M740 160 H580 V230 H474" className="trace-bg"></path>
+                  <path d="M740 160 H580 V230 H474" className="trace-flow green"></path>
+
+                  <path d="M720 250 H590 V250 H474" className="trace-bg"></path>
+                  <path d="M720 250 H590 V250 H474" className="trace-flow red"></path>
+
+                  <path d="M680 340 H570 V270 H474" className="trace-bg"></path>
+                  <path d="M680 340 H570 V270 H474" className="trace-flow yellow"></path>
+                </g>
+
+                <rect
+                  x="330"
+                  y="190"
+                  width="140"
+                  height="100"
+                  rx="20"
+                  ry="20"
+                  fill="url(#chipGradient)"
+                  stroke="#222"
+                  strokeWidth="3"
+                  filter="drop-shadow(0 0 6px rgba(0,0,0,0.8))"
+                ></rect>
+
+                <g>
+                  <rect
+                    x="322"
+                    y="205"
+                    width="8"
+                    height="10"
+                    fill="url(#pinGradient)"
+                    rx="2"
+                  ></rect>
+                  <rect
+                    x="322"
+                    y="225"
+                    width="8"
+                    height="10"
+                    fill="url(#pinGradient)"
+                    rx="2"
+                  ></rect>
+                  <rect
+                    x="322"
+                    y="245"
+                    width="8"
+                    height="10"
+                    fill="url(#pinGradient)"
+                    rx="2"
+                  ></rect>
+                  <rect
+                    x="322"
+                    y="265"
+                    width="8"
+                    height="10"
+                    fill="url(#pinGradient)"
+                    rx="2"
+                  ></rect>
+                </g>
+
+                <g>
+                  <rect
+                    x="470"
+                    y="205"
+                    width="8"
+                    height="10"
+                    fill="url(#pinGradient)"
+                    rx="2"
+                  ></rect>
+                  <rect
+                    x="470"
+                    y="225"
+                    width="8"
+                    height="10"
+                    fill="url(#pinGradient)"
+                    rx="2"
+                  ></rect>
+                  <rect
+                    x="470"
+                    y="245"
+                    width="8"
+                    height="10"
+                    fill="url(#pinGradient)"
+                    rx="2"
+                  ></rect>
+                  <rect
+                    x="470"
+                    y="265"
+                    width="8"
+                    height="10"
+                    fill="url(#pinGradient)"
+                    rx="2"
+                  ></rect>
+                </g>
+
+                <text
+                  x="400"
+                  y="240"
+                  fontFamily="Arial, sans-serif"
+                  fontSize="16"
+                  fontWeight="bold"
+                  fill="url(#textGradient)"
+                  textAnchor="middle"
+                  alignmentBaseline="middle"
+                >
+                  AGENDAMENTOS
+                </text>
+
+                <circle cx="100" cy="100" r="5" fill="black"></circle>
+                <circle cx="80" cy="180" r="5" fill="black"></circle>
+                <circle cx="60" cy="260" r="5" fill="black"></circle>
+                <circle cx="100" cy="350" r="5" fill="black"></circle>
+
+                <circle cx="700" cy="90" r="5" fill="black"></circle>
+                <circle cx="740" cy="160" r="5" fill="black"></circle>
+                <circle cx="720" cy="250" r="5" fill="black"></circle>
+                <circle cx="680" cy="340" r="5" fill="black"></circle>
+              </svg>
+            </div>
+          </div>
+        </div >
+      </div >
 
       {/* Dashboard Content */}
       {renderAdminDashboard()}
@@ -629,7 +782,7 @@ const DashboardAdmin = () => {
       {/* Modals */}
       {showNewUserForm && renderNewUserForm()}
       {showReportsModal && renderReportsModal()}
-    </div>
+    </div >
   );
 
 };

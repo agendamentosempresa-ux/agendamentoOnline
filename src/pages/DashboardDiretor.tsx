@@ -20,8 +20,8 @@ const DashboardDiretor = () => {
   // filter flag to show only today's items when modal opened
   const [historyTodayOnly, setHistoryTodayOnly] = useState(false);
 
-  // Obter os agendamentos pendentes do contexto
-  const pendingSchedulings = getPendingSchedulings();
+  // Obter os agendamentos pendentes do contexto e ordenar do mais recente para o mais antigo
+  const pendingSchedulings = [...getPendingSchedulings()].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   // ref para seção pendentes
   const pendingRef = useRef<HTMLDivElement | null>(null);
@@ -39,6 +39,7 @@ const DashboardDiretor = () => {
   const [comment, setComment] = useState('');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [currentScheduling, setCurrentScheduling] = useState<Scheduling | null>(null);
+  const [isHistoryDetail, setIsHistoryDetail] = useState(false);
 
   // Função auxiliar para obter o nome do solicitante com base no tipo
   const getSchedulingName = (scheduling: Scheduling) => {
@@ -196,6 +197,7 @@ const DashboardDiretor = () => {
   const showDetails = (scheduling: Scheduling) => {
     setCurrentScheduling(scheduling);
     setShowDetailsModal(true);
+    setIsHistoryDetail(false); // Not from history
     // Fechar o modal de histórico ao abrir o de detalhes
     setShowHistoryModal(false);
     // Garantir que o comentário seja resetado quando abrir o modal
@@ -206,6 +208,7 @@ const DashboardDiretor = () => {
   const showHistoricalSchedulingDetails = (scheduling: Scheduling) => {
     setCurrentScheduling(scheduling);
     setShowDetailsModal(true);
+    setIsHistoryDetail(true); // From history - no approve/reject buttons
     // Fechar o modal de histórico ao abrir o de detalhes
     setShowHistoryModal(false);
     // Garantir que o comentário seja resetado
@@ -333,11 +336,19 @@ const DashboardDiretor = () => {
     }
   };
 
-  // Derived lists for history tabs
-  const approvedList = schedulings.filter(s => s.status === 'aprovado');
-  const rejectedList = schedulings.filter(s => s.status === 'reprovado');
-  const attendedList = schedulings.filter(s => (s as any).checkInStatus === 'autorizado');
-  const notAttendedList = schedulings.filter(s => (s as any).checkInStatus === 'nao-compareceu');
+  // Derived lists for history tabs (ordered from newest to oldest)
+  const approvedList = schedulings
+    .filter(s => s.status === 'aprovado')
+    .sort((a, b) => new Date(b.reviewedAt || b.createdAt).getTime() - new Date(a.reviewedAt || a.createdAt).getTime());
+  const rejectedList = schedulings
+    .filter(s => s.status === 'reprovado')
+    .sort((a, b) => new Date(b.reviewedAt || b.createdAt).getTime() - new Date(a.reviewedAt || a.createdAt).getTime());
+  const attendedList = schedulings
+    .filter(s => (s as any).checkInStatus === 'autorizado')
+    .sort((a, b) => new Date((b as any).checkInAt || b.createdAt).getTime() - new Date((a as any).checkInAt || a.createdAt).getTime());
+  const notAttendedList = schedulings
+    .filter(s => (s as any).checkInStatus === 'nao-compareceu')
+    .sort((a, b) => new Date((b as any).checkInAt || b.createdAt).getTime() - new Date((a as any).checkInAt || a.createdAt).getTime());
 
   // Modal lists (apply 'today only' filter when requested)
   const modalApprovedList = historyTodayOnly
@@ -720,24 +731,28 @@ const DashboardDiretor = () => {
                 </div>
               )}
 
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">💬 Justificativa da Decisão:</label>
-                <textarea
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  rows={3}
-                  placeholder="Digite sua justificativa..."
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                ></textarea>
-              </div>
-              <div className="flex space-x-3 mt-6">
-                <button
-                  onClick={() => handleApprove(currentScheduling.id)}
-                  className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg">👍 Aprovar</button>
-                <button
-                  onClick={() => handleReject(currentScheduling.id)}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg">👎 Reprovar</button>
-              </div>
+              {!isHistoryDetail && (
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">💬 Justificativa da Decisão:</label>
+                  <textarea
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    rows={3}
+                    placeholder="Digite sua justificativa..."
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                  ></textarea>
+                </div>
+              )}
+              {!isHistoryDetail && (
+                <div className="flex space-x-3 mt-6">
+                  <button
+                    onClick={() => handleApprove(currentScheduling.id)}
+                    className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg">👍 Aprovar</button>
+                  <button
+                    onClick={() => handleReject(currentScheduling.id)}
+                    className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg">👎 Reprovar</button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -820,11 +835,7 @@ const DashboardDiretor = () => {
                         <div 
                           key={s.id} 
                           className="p-3 bg-white rounded mb-2 border cursor-pointer hover:bg-gray-50"
-                          onClick={() => {
-                            setCurrentScheduling(s);
-                            setShowDetailsModal(true);
-                            setShowHistoryModal(false);
-                          }}
+                          onClick={() => showHistoricalSchedulingDetails(s)}
                         >
                           <div className="flex justify-between">
                             <div>
@@ -850,11 +861,7 @@ const DashboardDiretor = () => {
                         <div 
                           key={s.id} 
                           className="p-3 bg-white rounded mb-2 border cursor-pointer hover:bg-gray-50"
-                          onClick={() => {
-                            setCurrentScheduling(s);
-                            setShowDetailsModal(true);
-                            setShowHistoryModal(false);
-                          }}
+                          onClick={() => showHistoricalSchedulingDetails(s)}
                         >
                           <div className="flex justify-between">
                             <div>
@@ -880,11 +887,7 @@ const DashboardDiretor = () => {
                         <div 
                           key={s.id} 
                           className="p-3 bg-white rounded mb-2 border cursor-pointer hover:bg-gray-50"
-                          onClick={() => {
-                            setCurrentScheduling(s);
-                            setShowDetailsModal(true);
-                            setShowHistoryModal(false);
-                          }}
+                          onClick={() => showHistoricalSchedulingDetails(s)}
                         >
                           <div className="flex justify-between">
                             <div>
@@ -910,11 +913,7 @@ const DashboardDiretor = () => {
                         <div 
                           key={s.id} 
                           className="p-3 bg-white rounded mb-2 border cursor-pointer hover:bg-gray-50"
-                          onClick={() => {
-                            setCurrentScheduling(s);
-                            setShowDetailsModal(true);
-                            setShowHistoryModal(false);
-                          }}
+                          onClick={() => showHistoricalSchedulingDetails(s)}
                         >
                           <div className="flex justify-between">
                             <div>
