@@ -479,48 +479,31 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
 
   const clearHistory = async () => {
     try {
-      // Limpar do Supabase - deletar registros antigos (mais antigos que 30 dias)
-      const trintaDiasAtras = new Date();
-      trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
-      const dataLimite = trintaDiasAtras.toISOString();
-      
-      // Deletar registros mais antigos que 30 dias e que não são pendentes
+      // Limpar do Supabase - deletar todos os registros que NÃO são pendentes
       const { error } = await supabase
         .from('schedules')
         .delete()
-        .lt('created_at', dataLimite)
         .not('status', 'eq', 'pendente');
       
       if (error) {
         console.error('Erro ao limpar histórico no Supabase', error);
-        // Fallback: limpar registros antigos apenas do localStorage
-        const registrosRecentes = schedulings.filter(s => {
-          const dataCriacao = new Date(s.createdAt);
-          return s.status === 'pendente' || dataCriacao >= trintaDiasAtras;
-        });
-        setSchedulings(registrosRecentes);
-        localStorage.setItem('petronas_schedulings', JSON.stringify(registrosRecentes));
+        // Fallback: limpar apenas registros do localStorage (manter pendentes)
+        const registrosPendentes = schedulings.filter(s => s.status === 'pendente');
+        setSchedulings(registrosPendentes);
+        localStorage.setItem('petronas_schedulings', JSON.stringify(registrosPendentes));
       } else {
-        console.log('Histórico antigo limpo com sucesso no Supabase');
-        // Atualizar o estado local para manter apenas registros recentes
-        const registrosRecentes = schedulings.filter(s => {
-          const dataCriacao = new Date(s.createdAt);
-          return s.status === 'pendente' || dataCriacao >= trintaDiasAtras;
-        });
-        setSchedulings(registrosRecentes);
-        localStorage.setItem('petronas_schedulings', JSON.stringify(registrosRecentes));
+        console.log('Histórico limpo com sucesso no Supabase');
+        // Atualizar o estado local para manter apenas registros pendentes
+        const registrosPendentes = schedulings.filter(s => s.status === 'pendente');
+        setSchedulings(registrosPendentes);
+        localStorage.setItem('petronas_schedulings', JSON.stringify(registrosPendentes));
       }
     } catch (err) {
       console.error('Erro ao limpar histórico', err);
-      // Fallback: limpar registros antigos apenas do localStorage
-      const trintaDiasAtras = new Date();
-      trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
-      const registrosRecentes = schedulings.filter(s => {
-        const dataCriacao = new Date(s.createdAt);
-        return s.status === 'pendente' || dataCriacao >= trintaDiasAtras;
-      });
-      setSchedulings(registrosRecentes);
-      localStorage.setItem('petronas_schedulings', JSON.stringify(registrosRecentes));
+      // Fallback: limpar apenas registros do localStorage (manter pendentes)
+      const registrosPendentes = schedulings.filter(s => s.status === 'pendente');
+      setSchedulings(registrosPendentes);
+      localStorage.setItem('petronas_schedulings', JSON.stringify(registrosPendentes));
     }
   };
 

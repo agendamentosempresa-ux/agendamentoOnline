@@ -47,6 +47,7 @@ interface AuthContextType {
   fetchLogs: (limit?: number) => Promise<LogRecord[]>; // Fetch logs
   fetchStatistics: () => Promise<Statistics>; // Fetch statistics
   updateUserPassword: (id: string, newPassword: string) => Promise<void>; // Update user password
+  clearLogs: () => Promise<void>; // Clear all system logs
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -299,6 +300,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error('Unexpected error during fetchLogs:', error);
       return [];
+    }
+  };
+
+  // Function to clear all logs
+  const clearLogs = async () => {
+    try {
+      let error;
+
+      // Try admin client first, then regular client
+      if (supabaseAdmin) {
+        const { error: adminError } = await supabaseAdmin
+          .from('logs')
+          .delete()
+          .not('id', 'is', null); // Delete all logs
+
+        if (adminError) {
+          console.warn('Admin client failed for clearLogs, falling back to regular client:', adminError);
+          const { error: regularError } = await supabase
+            .from('logs')
+            .delete()
+            .not('id', 'is', null); // Delete all logs
+          error = regularError;
+        }
+      } else {
+        const { error: regularError } = await supabase
+          .from('logs')
+          .delete()
+          .not('id', 'is', null); // Delete all logs
+        error = regularError;
+      }
+
+      if (error) {
+        console.error('Erro ao limpar logs:', error);
+        throw error;
+      }
+
+      console.log('Logs limpos com sucesso');
+    } catch (error) {
+      console.error('Unexpected error during clearLogs:', error);
+      throw error;
     }
   };
 
@@ -711,6 +752,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     fetchUsers,
     fetchLogs,
     fetchStatistics,
+    clearLogs,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

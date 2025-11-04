@@ -620,26 +620,26 @@ const DashboardDiretor = () => {
                         <div><strong>Transporte Equipamentos:</strong> {(currentScheduling.data as any)?.transporteEquipamentos ? 'Sim' : 'Não'}</div>
                         <div><strong>Portaria:</strong> {(currentScheduling.data as any)?.portariaAcesso || 'N/A'}</div>
                       </div>
-                      
+
                       {/* Exibir informações dos acompanhantes se existirem */}
-                      {(currentScheduling.data as any)?.acompanhantes && 
-                        Array.isArray((currentScheduling.data as any).acompanhantes) && 
+                      {(currentScheduling.data as any)?.acompanhantes &&
+                        Array.isArray((currentScheduling.data as any).acompanhantes) &&
                         (currentScheduling.data as any).acompanhantes.length > 0 && (
-                        <div className="border-t pt-4">
-                          <h4 className="text-md font-semibold text-gray-800 mb-3">Acompanhantes ({(currentScheduling.data as any).acompanhantes.length}):</h4>
-                          <div className="space-y-3">
-                            {(currentScheduling.data as any).acompanhantes.map((acompanhante: any, index: number) => (
-                              <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                                  <div><strong>Nome:</strong> {acompanhante.nome || 'N/A'}</div>
-                                  <div><strong>CPF:</strong> {acompanhante.cpf || 'N/A'}</div>
-                                  <div><strong>RG:</strong> {acompanhante.rg || 'N/A'}</div>
+                          <div className="border-t pt-4">
+                            <h4 className="text-md font-semibold text-gray-800 mb-3">Acompanhantes ({(currentScheduling.data as any).acompanhantes.length}):</h4>
+                            <div className="space-y-3">
+                              {(currentScheduling.data as any).acompanhantes.map((acompanhante: any, index: number) => (
+                                <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                                    <div><strong>Nome:</strong> {acompanhante.nome || 'N/A'}</div>
+                                    <div><strong>CPF:</strong> {acompanhante.cpf || 'N/A'}</div>
+                                    <div><strong>RG:</strong> {acompanhante.rg || 'N/A'}</div>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
                     </div>
                   )}
 
@@ -660,26 +660,26 @@ const DashboardDiretor = () => {
                         <div className="md:col-span-2"><strong>Motivo:</strong> {(currentScheduling.data as any)?.motivoVisita || 'N/A'}</div>
                         <div className="md:col-span-2"><strong>Considerado Como Visita:</strong> {(currentScheduling.data as any)?.consideradoComoVisita || 'N/A'}</div>
                       </div>
-                      
+
                       {/* Exibir informações dos acompanhantes se existirem */}
-                      {(currentScheduling.data as any)?.acompanhantes && 
-                        Array.isArray((currentScheduling.data as any).acompanhantes) && 
+                      {(currentScheduling.data as any)?.acompanhantes &&
+                        Array.isArray((currentScheduling.data as any).acompanhantes) &&
                         (currentScheduling.data as any).acompanhantes.length > 0 && (
-                        <div className="border-t pt-4">
-                          <h4 className="text-md font-semibold text-gray-800 mb-3">Acompanhantes ({(currentScheduling.data as any).acompanhantes.length}):</h4>
-                          <div className="space-y-3">
-                            {(currentScheduling.data as any).acompanhantes.map((acompanhante: any, index: number) => (
-                              <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                                  <div><strong>Nome:</strong> {acompanhante.nome || 'N/A'}</div>
-                                  <div><strong>CPF:</strong> {acompanhante.cpf || 'N/A'}</div>
-                                  <div><strong>RG:</strong> {acompanhante.rg || 'N/A'}</div>
+                          <div className="border-t pt-4">
+                            <h4 className="text-md font-semibold text-gray-800 mb-3">Acompanhantes ({(currentScheduling.data as any).acompanhantes.length}):</h4>
+                            <div className="space-y-3">
+                              {(currentScheduling.data as any).acompanhantes.map((acompanhante: any, index: number) => (
+                                <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                                    <div><strong>Nome:</strong> {acompanhante.nome || 'N/A'}</div>
+                                    <div><strong>CPF:</strong> {acompanhante.cpf || 'N/A'}</div>
+                                    <div><strong>RG:</strong> {acompanhante.rg || 'N/A'}</div>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
                     </div>
                   )}
 
@@ -802,13 +802,13 @@ const DashboardDiretor = () => {
             <div className="p-4 border-b flex justify-between items-center">
               <h3 className="text-xl font-bold">📚 Histórico de Solicitações</h3>
               <div className="flex items-center space-x-3">
-                <button 
+                <button
                   onClick={async () => {
                     if (window.confirm('Tem certeza que deseja limpar todo o histórico? Esta ação não pode ser desfeita.')) {
                       await clearHistory();
                       closeHistoryModal();
                     }
-                  }} 
+                  }}
                   className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
                 >
                   🗑️ Limpar Histórico
@@ -832,15 +832,15 @@ const DashboardDiretor = () => {
                   <div>
                     {approvedList.length === 0 ? <p className="text-gray-600">Nenhum agendamento aprovado.</p> : (
                       modalApprovedList.map(s => (
-                        <div 
-                          key={s.id} 
+                        <div
+                          key={s.id}
                           className="p-3 bg-white rounded mb-2 border cursor-pointer hover:bg-gray-50"
                           onClick={() => showHistoricalSchedulingDetails(s)}
                         >
                           <div className="flex justify-between">
                             <div>
-                              <div className="text-sm text-gray-500">{getSchedulingTypeLabel(s.type)} 
-                                {(s.data as any)?.acompanhantes && (s.data as any).acompanhantes.length > 0 
+                              <div className="text-sm text-gray-500">{getSchedulingTypeLabel(s.type)}
+                                {(s.data as any)?.acompanhantes && (s.data as any).acompanhantes.length > 0
                                   ? ` (+${(s.data as any).acompanhantes.length} acomp.)` : ''}
                               </div>
                               <div className="font-semibold">{getSchedulingName(s)}</div>
@@ -858,15 +858,15 @@ const DashboardDiretor = () => {
                   <div>
                     {rejectedList.length === 0 ? <p className="text-gray-600">Nenhum agendamento reprovado.</p> : (
                       modalRejectedList.map(s => (
-                        <div 
-                          key={s.id} 
+                        <div
+                          key={s.id}
                           className="p-3 bg-white rounded mb-2 border cursor-pointer hover:bg-gray-50"
                           onClick={() => showHistoricalSchedulingDetails(s)}
                         >
                           <div className="flex justify-between">
                             <div>
-                              <div className="text-sm text-gray-500">{getSchedulingTypeLabel(s.type)} 
-                                {(s.data as any)?.acompanhantes && (s.data as any).acompanhantes.length > 0 
+                              <div className="text-sm text-gray-500">{getSchedulingTypeLabel(s.type)}
+                                {(s.data as any)?.acompanhantes && (s.data as any).acompanhantes.length > 0
                                   ? ` (+${(s.data as any).acompanhantes.length} acomp.)` : ''}
                               </div>
                               <div className="font-semibold">{getSchedulingName(s)}</div>
@@ -884,15 +884,15 @@ const DashboardDiretor = () => {
                   <div>
                     {attendedList.length === 0 ? <p className="text-gray-600">Nenhum registro de comparecimento.</p> : (
                       modalAttendedList.map(s => (
-                        <div 
-                          key={s.id} 
+                        <div
+                          key={s.id}
                           className="p-3 bg-white rounded mb-2 border cursor-pointer hover:bg-gray-50"
                           onClick={() => showHistoricalSchedulingDetails(s)}
                         >
                           <div className="flex justify-between">
                             <div>
-                              <div className="text-sm text-gray-500">{getSchedulingTypeLabel(s.type)} 
-                                {(s.data as any)?.acompanhantes && (s.data as any).acompanhantes.length > 0 
+                              <div className="text-sm text-gray-500">{getSchedulingTypeLabel(s.type)}
+                                {(s.data as any)?.acompanhantes && (s.data as any).acompanhantes.length > 0
                                   ? ` (+${(s.data as any).acompanhantes.length} acomp.)` : ''}
                               </div>
                               <div className="font-semibold">{getSchedulingName(s)}</div>
@@ -910,15 +910,15 @@ const DashboardDiretor = () => {
                   <div>
                     {notAttendedList.length === 0 ? <p className="text-gray-600">Nenhum registro de não comparecimento.</p> : (
                       modalNotAttendedList.map(s => (
-                        <div 
-                          key={s.id} 
+                        <div
+                          key={s.id}
                           className="p-3 bg-white rounded mb-2 border cursor-pointer hover:bg-gray-50"
                           onClick={() => showHistoricalSchedulingDetails(s)}
                         >
                           <div className="flex justify-between">
                             <div>
-                              <div className="text-sm text-gray-500">{getSchedulingTypeLabel(s.type)} 
-                                {(s.data as any)?.acompanhantes && (s.data as any).acompanhantes.length > 0 
+                              <div className="text-sm text-gray-500">{getSchedulingTypeLabel(s.type)}
+                                {(s.data as any)?.acompanhantes && (s.data as any).acompanhantes.length > 0
                                   ? ` (+${(s.data as any).acompanhantes.length} acomp.)` : ''}
                               </div>
                               <div className="font-semibold">{getSchedulingName(s)}</div>

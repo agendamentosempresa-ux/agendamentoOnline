@@ -19,7 +19,7 @@ const DashboardSolicitante = () => {
 
   // Estado para controlar as solicitações do usuário
   const [userSchedulingsState, setUserSchedulingsState] = useState<any[]>([]);
-  
+
   // Atualizar as solicitações do usuário quando o contexto mudar
   useEffect(() => {
     if (user) {
@@ -27,7 +27,7 @@ const DashboardSolicitante = () => {
       setUserSchedulingsState(userSchedulings);
     }
   }, [schedulings, user, getSchedulingsByUser]);
-  
+
   // Usar as solicitações do estado local
   const userSchedulings = userSchedulingsState;
 
@@ -64,27 +64,30 @@ const DashboardSolicitante = () => {
   const [solicitationData, setSolicitationData] = useState<any>({});
   const [solicitationName, setSolicitationName] = useState('');
   const [solicitationCompany, setSolicitationCompany] = useState('');
-  
+
   // Estados para acompanhantes no modal de nova solicitação
   const [temAcompanhantesNovo, setTemAcompanhantesNovo] = useState(false);
   const [quantidadeAcompanhantesNovo, setQuantidadeAcompanhantesNovo] = useState(1);
-  const [acompanhantesNovo, setAcompanhantesNovo] = useState<Array<{nome: string, cpf: string, rg: string}>>([{nome: '', cpf: '', rg: ''}]);
+  const [acompanhantesNovo, setAcompanhantesNovo] = useState<Array<{ nome: string, cpf: string, rg: string }>>([{ nome: '', cpf: '', rg: '' }]);
 
   // Estados para edição de solicitações
   const [editingScheduling, setEditingScheduling] = useState<any>(null);
   const [editingSchedulingData, setEditingSchedulingData] = useState<any>({});
   const [editingSchedulingName, setEditingSchedulingName] = useState('');
   const [editingSchedulingCompany, setEditingSchedulingCompany] = useState('');
-  
+
   // Estados para detalhes de solicitações
   const [showSchedulingDetails, setShowSchedulingDetails] = useState(false);
   const [currentSchedulingDetails, setCurrentSchedulingDetails] = useState<any>(null);
   const [forceUpdate, setForceUpdate] = useState(0);
-  
+
+  // Novo estado para controlar as abas de minhas solicitações  
+  const [activeTab, setActiveTab] = useState<'all' | 'pendente' | 'aprovado' | 'reprovado' | 'cancelado'>('all');
+
   // Estados para acompanhantes
   const [temAcompanhantes, setTemAcompanhantes] = useState(false);
   const [quantidadeAcompanhantes, setQuantidadeAcompanhantes] = useState(1);
-  const [acompanhantes, setAcompanhantes] = useState<Array<{nome: string, cpf: string, rg: string}>>([{nome: '', cpf: '', rg: ''}]);
+  const [acompanhantes, setAcompanhantes] = useState<Array<{ nome: string, cpf: string, rg: string }>>([{ nome: '', cpf: '', rg: '' }]);
 
   // NOVO ESTADO: Lista de Integrantes para o tipo 'integracao'
   const [integrationList, setIntegrationList] = useState<IntegrationItem[]>([]);
@@ -108,7 +111,7 @@ const DashboardSolicitante = () => {
     // Resetar estados dos acompanhantes
     setTemAcompanhantesNovo(false);
     setQuantidadeAcompanhantesNovo(1);
-    setAcompanhantesNovo([{nome: '', cpf: '', rg: ''}]);
+    setAcompanhantesNovo([{ nome: '', cpf: '', rg: '' }]);
   };
 
   // NOVA FUNÇÃO: Adicionar Integrante à Lista
@@ -167,10 +170,10 @@ const DashboardSolicitante = () => {
         empresaPrestadora: solicitationCompany,
         ...solicitationData
       };
-      
+
       // Adicionar dados dos acompanhantes se existirem
       if (temAcompanhantesNovo && acompanhantesNovo && acompanhantesNovo.length > 0) {
-        data.acompanhantes = acompanhantesNovo.filter(acompanhante => 
+        data.acompanhantes = acompanhantesNovo.filter(acompanhante =>
           acompanhante.nome.trim() !== '' || acompanhante.cpf.trim() !== '' || acompanhante.rg.trim() !== ''
         );
       }
@@ -180,10 +183,10 @@ const DashboardSolicitante = () => {
         empresaVisitante: solicitationCompany,
         ...solicitationData
       };
-      
+
       // Adicionar dados dos acompanhantes se existirem
       if (temAcompanhantesNovo && acompanhantesNovo && acompanhantesNovo.length > 0) {
-        data.acompanhantes = acompanhantesNovo.filter(acompanhante => 
+        data.acompanhantes = acompanhantesNovo.filter(acompanhante =>
           acompanhante.nome.trim() !== '' || acompanhante.cpf.trim() !== '' || acompanhante.rg.trim() !== ''
         );
       }
@@ -229,15 +232,15 @@ const DashboardSolicitante = () => {
       alert('Apenas solicitações pendentes podem ser editadas.');
       return;
     }
-    
+
     setEditingScheduling(scheduling);
     setEditingSchedulingData({ ...scheduling.data });
-    
+
     // Definir nome e empresa com base no tipo da solicitação
     if (scheduling.type === 'servicos-avulsos') {
       setEditingSchedulingName(scheduling.data?.nomeFuncionario || '');
       setEditingSchedulingCompany(scheduling.data?.empresaPrestadora || '');
-      
+
       // Inicializar dados dos acompanhantes se existirem
       if (scheduling.data?.acompanhantes && scheduling.data?.acompanhantes.length > 0) {
         setTemAcompanhantes(true);
@@ -246,12 +249,12 @@ const DashboardSolicitante = () => {
       } else {
         setTemAcompanhantes(false);
         setQuantidadeAcompanhantes(1);
-        setAcompanhantes([{nome: '', cpf: '', rg: ''}]);
+        setAcompanhantes([{ nome: '', cpf: '', rg: '' }]);
       }
     } else if (scheduling.type === 'visitas') {
       setEditingSchedulingName(scheduling.data?.nomeCompleto || '');
       setEditingSchedulingCompany(scheduling.data?.empresaVisitante || '');
-      
+
       // Inicializar dados dos acompanhantes se existirem
       if (scheduling.data?.acompanhantes && scheduling.data?.acompanhantes.length > 0) {
         setTemAcompanhantes(true);
@@ -260,7 +263,7 @@ const DashboardSolicitante = () => {
       } else {
         setTemAcompanhantes(false);
         setQuantidadeAcompanhantes(1);
-        setAcompanhantes([{nome: '', cpf: '', rg: ''}]);
+        setAcompanhantes([{ nome: '', cpf: '', rg: '' }]);
       }
     } else if (scheduling.type === 'integracao') {
       setEditingSchedulingName(scheduling.data?.nomeCompleto || '');
@@ -277,24 +280,24 @@ const DashboardSolicitante = () => {
 
     // Atualizar os dados com base no tipo
     let updatedData: any = { ...editingSchedulingData };
-    
+
     if (editingScheduling.type === 'servicos-avulsos') {
       updatedData.nomeFuncionario = editingSchedulingName;
       updatedData.empresaPrestadora = editingSchedulingCompany;
-      
+
       // Adicionar dados dos acompanhantes se existirem
       if (temAcompanhantes && acompanhantes && acompanhantes.length > 0) {
-        updatedData.acompanhantes = acompanhantes.filter(acompanhante => 
+        updatedData.acompanhantes = acompanhantes.filter(acompanhante =>
           acompanhante.nome.trim() !== '' || acompanhante.cpf.trim() !== '' || acompanhante.rg.trim() !== ''
         );
       }
     } else if (editingScheduling.type === 'visitas') {
       updatedData.nomeCompleto = editingSchedulingName;
       updatedData.empresaVisitante = editingSchedulingCompany;
-      
+
       // Adicionar dados dos acompanhantes se existirem
       if (temAcompanhantes && acompanhantes && acompanhantes.length > 0) {
-        updatedData.acompanhantes = acompanhantes.filter(acompanhante => 
+        updatedData.acompanhantes = acompanhantes.filter(acompanhante =>
           acompanhante.nome.trim() !== '' || acompanhante.cpf.trim() !== '' || acompanhante.rg.trim() !== ''
         );
       }
@@ -311,9 +314,9 @@ const DashboardSolicitante = () => {
       data: updatedData,
       requestedByName: editingSchedulingName
     });
-    
+
     alert('Solicitação atualizada com sucesso!');
-    
+
     // Resetar estados de edição
     setEditingScheduling(null);
     setEditingSchedulingData({});
@@ -322,26 +325,26 @@ const DashboardSolicitante = () => {
     // Resetar estados dos acompanhantes
     setTemAcompanhantes(false);
     setQuantidadeAcompanhantes(1);
-    setAcompanhantes([{nome: '', cpf: '', rg: ''}]);
+    setAcompanhantes([{ nome: '', cpf: '', rg: '' }]);
   };
 
   // FUNÇÃO: Cancelar solicitação
   const handleCancelSolicitation = async (id: string) => {
     if (window.confirm('Tem certeza que deseja cancelar esta solicitação?')) {
       // Atualizar imediatamente a lista local para refletir a mudança na UI
-      setUserSchedulingsState(prevSchedulings => 
-        prevSchedulings.map(s => 
+      setUserSchedulingsState(prevSchedulings =>
+        prevSchedulings.map(s =>
           s.id === id ? { ...s, status: 'cancelado' } : s
         )
       );
-      
+
       try {
         await cancelScheduling(id);
         alert('Solicitação cancelada com sucesso!');
       } catch (error) {
         // Em caso de erro, restaurar o status anterior
-        setUserSchedulingsState(prevSchedulings => 
-          prevSchedulings.map(s => 
+        setUserSchedulingsState(prevSchedulings =>
+          prevSchedulings.map(s =>
             s.id === id ? { ...s, status: s.status } : s
           )
         );
@@ -681,7 +684,7 @@ const DashboardSolicitante = () => {
                   <option value="Portaria 2">Portaria 2</option>
                 </select>
               </div>
-              
+
               {/* Campo para acompanhantes em serviços avulsos */}
               {solicitationType === 'servicos-avulsos' && (
                 <>
@@ -694,7 +697,7 @@ const DashboardSolicitante = () => {
                           setTemAcompanhantesNovo(e.target.checked);
                           if (!e.target.checked) {
                             setQuantidadeAcompanhantesNovo(1);
-                            setAcompanhantesNovo([{nome: '', cpf: '', rg: ''}]);
+                            setAcompanhantesNovo([{ nome: '', cpf: '', rg: '' }]);
                           }
                         }}
                         className="mr-2"
@@ -713,14 +716,14 @@ const DashboardSolicitante = () => {
                         onChange={(e) => {
                           const novaQuantidade = Math.max(1, parseInt(e.target.value) || 1);
                           setQuantidadeAcompanhantesNovo(novaQuantidade);
-                          
+
                           // Atualizar o array de acompanhantes
                           const novosAcompanhantes = [];
                           for (let i = 0; i < novaQuantidade; i++) {
                             if (acompanhantesNovo[i]) {
                               novosAcompanhantes.push(acompanhantesNovo[i]);
                             } else {
-                              novosAcompanhantes.push({nome: '', cpf: '', rg: ''});
+                              novosAcompanhantes.push({ nome: '', cpf: '', rg: '' });
                             }
                           }
                           setAcompanhantesNovo(novosAcompanhantes);
@@ -745,7 +748,7 @@ const DashboardSolicitante = () => {
                                 value={acompanhante.nome}
                                 onChange={(e) => {
                                   const novosAcompanhantes = [...acompanhantesNovo];
-                                  novosAcompanhantes[index] = {...novosAcompanhantes[index], nome: e.target.value};
+                                  novosAcompanhantes[index] = { ...novosAcompanhantes[index], nome: e.target.value };
                                   setAcompanhantesNovo(novosAcompanhantes);
                                 }}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
@@ -759,7 +762,7 @@ const DashboardSolicitante = () => {
                                 value={acompanhante.cpf}
                                 onChange={(e) => {
                                   const novosAcompanhantes = [...acompanhantesNovo];
-                                  novosAcompanhantes[index] = {...novosAcompanhantes[index], cpf: e.target.value};
+                                  novosAcompanhantes[index] = { ...novosAcompanhantes[index], cpf: e.target.value };
                                   setAcompanhantesNovo(novosAcompanhantes);
                                 }}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
@@ -773,7 +776,7 @@ const DashboardSolicitante = () => {
                                 value={acompanhante.rg}
                                 onChange={(e) => {
                                   const novosAcompanhantes = [...acompanhantesNovo];
-                                  novosAcompanhantes[index] = {...novosAcompanhantes[index], rg: e.target.value};
+                                  novosAcompanhantes[index] = { ...novosAcompanhantes[index], rg: e.target.value };
                                   setAcompanhantesNovo(novosAcompanhantes);
                                 }}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
@@ -946,7 +949,7 @@ const DashboardSolicitante = () => {
                   <option value="Portaria 2">Portaria 2</option>
                 </select>
               </div>
-              
+
               {/* Campo para acompanhantes em visitas */}
               {solicitationType === 'visitas' && (
                 <>
@@ -959,7 +962,7 @@ const DashboardSolicitante = () => {
                           setTemAcompanhantesNovo(e.target.checked);
                           if (!e.target.checked) {
                             setQuantidadeAcompanhantesNovo(1);
-                            setAcompanhantesNovo([{nome: '', cpf: '', rg: ''}]);
+                            setAcompanhantesNovo([{ nome: '', cpf: '', rg: '' }]);
                           }
                         }}
                         className="mr-2"
@@ -978,14 +981,14 @@ const DashboardSolicitante = () => {
                         onChange={(e) => {
                           const novaQuantidade = Math.max(1, parseInt(e.target.value) || 1);
                           setQuantidadeAcompanhantesNovo(novaQuantidade);
-                          
+
                           // Atualizar o array de acompanhantes
                           const novosAcompanhantes = [];
                           for (let i = 0; i < novaQuantidade; i++) {
                             if (acompanhantesNovo[i]) {
                               novosAcompanhantes.push(acompanhantesNovo[i]);
                             } else {
-                              novosAcompanhantes.push({nome: '', cpf: '', rg: ''});
+                              novosAcompanhantes.push({ nome: '', cpf: '', rg: '' });
                             }
                           }
                           setAcompanhantesNovo(novosAcompanhantes);
@@ -1010,7 +1013,7 @@ const DashboardSolicitante = () => {
                                 value={acompanhante.nome}
                                 onChange={(e) => {
                                   const novosAcompanhantes = [...acompanhantesNovo];
-                                  novosAcompanhantes[index] = {...novosAcompanhantes[index], nome: e.target.value};
+                                  novosAcompanhantes[index] = { ...novosAcompanhantes[index], nome: e.target.value };
                                   setAcompanhantesNovo(novosAcompanhantes);
                                 }}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
@@ -1024,7 +1027,7 @@ const DashboardSolicitante = () => {
                                 value={acompanhante.cpf}
                                 onChange={(e) => {
                                   const novosAcompanhantes = [...acompanhantesNovo];
-                                  novosAcompanhantes[index] = {...novosAcompanhantes[index], cpf: e.target.value};
+                                  novosAcompanhantes[index] = { ...novosAcompanhantes[index], cpf: e.target.value };
                                   setAcompanhantesNovo(novosAcompanhantes);
                                 }}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
@@ -1038,7 +1041,7 @@ const DashboardSolicitante = () => {
                                 value={acompanhante.rg}
                                 onChange={(e) => {
                                   const novosAcompanhantes = [...acompanhantesNovo];
-                                  novosAcompanhantes[index] = {...novosAcompanhantes[index], rg: e.target.value};
+                                  novosAcompanhantes[index] = { ...novosAcompanhantes[index], rg: e.target.value };
                                   setAcompanhantesNovo(novosAcompanhantes);
                                 }}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
@@ -1244,7 +1247,7 @@ const DashboardSolicitante = () => {
                   // Resetar estados dos acompanhantes
                   setTemAcompanhantes(false);
                   setQuantidadeAcompanhantes(1);
-                  setAcompanhantes([{nome: '', cpf: '', rg: ''}]);
+                  setAcompanhantes([{ nome: '', cpf: '', rg: '' }]);
                 }}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -1259,9 +1262,9 @@ const DashboardSolicitante = () => {
                 type="text"
                 value={
                   editingScheduling.type === 'servicos-avulsos' ? '🔧 Serviços Avulsos' :
-                  editingScheduling.type === 'visitas' ? '🤝 Visitas (V3)' :
-                  editingScheduling.type === 'integracao' ? '📚 Integração' :
-                  '⏰ Acesso Antecipado'
+                    editingScheduling.type === 'visitas' ? '🤝 Visitas (V3)' :
+                      editingScheduling.type === 'integracao' ? '📚 Integração' :
+                        '⏰ Acesso Antecipado'
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100"
                 disabled
@@ -1345,7 +1348,7 @@ const DashboardSolicitante = () => {
                         setTemAcompanhantes(e.target.checked);
                         if (!e.target.checked) {
                           setQuantidadeAcompanhantes(1);
-                          setAcompanhantes([{nome: '', cpf: '', rg: ''}]);
+                          setAcompanhantes([{ nome: '', cpf: '', rg: '' }]);
                         }
                       }}
                       className="mr-2"
@@ -1364,14 +1367,14 @@ const DashboardSolicitante = () => {
                       onChange={(e) => {
                         const novaQuantidade = Math.max(1, parseInt(e.target.value) || 1);
                         setQuantidadeAcompanhantes(novaQuantidade);
-                        
+
                         // Atualizar o array de acompanhantes
                         const novosAcompanhantes = [];
                         for (let i = 0; i < novaQuantidade; i++) {
                           if (acompanhantes[i]) {
                             novosAcompanhantes.push(acompanhantes[i]);
                           } else {
-                            novosAcompanhantes.push({nome: '', cpf: '', rg: ''});
+                            novosAcompanhantes.push({ nome: '', cpf: '', rg: '' });
                           }
                         }
                         setAcompanhantes(novosAcompanhantes);
@@ -1396,7 +1399,7 @@ const DashboardSolicitante = () => {
                               value={acompanhante.nome}
                               onChange={(e) => {
                                 const novosAcompanhantes = [...acompanhantes];
-                                novosAcompanhantes[index] = {...novosAcompanhantes[index], nome: e.target.value};
+                                novosAcompanhantes[index] = { ...novosAcompanhantes[index], nome: e.target.value };
                                 setAcompanhantes(novosAcompanhantes);
                               }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg"
@@ -1410,7 +1413,7 @@ const DashboardSolicitante = () => {
                               value={acompanhante.cpf}
                               onChange={(e) => {
                                 const novosAcompanhantes = [...acompanhantes];
-                                novosAcompanhantes[index] = {...novosAcompanhantes[index], cpf: e.target.value};
+                                novosAcompanhantes[index] = { ...novosAcompanhantes[index], cpf: e.target.value };
                                 setAcompanhantes(novosAcompanhantes);
                               }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg"
@@ -1424,7 +1427,7 @@ const DashboardSolicitante = () => {
                               value={acompanhante.rg}
                               onChange={(e) => {
                                 const novosAcompanhantes = [...acompanhantes];
-                                novosAcompanhantes[index] = {...novosAcompanhantes[index], rg: e.target.value};
+                                novosAcompanhantes[index] = { ...novosAcompanhantes[index], rg: e.target.value };
                                 setAcompanhantes(novosAcompanhantes);
                               }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg"
@@ -1647,7 +1650,7 @@ const DashboardSolicitante = () => {
                         setTemAcompanhantes(e.target.checked);
                         if (!e.target.checked) {
                           setQuantidadeAcompanhantes(1);
-                          setAcompanhantes([{nome: '', cpf: '', rg: ''}]);
+                          setAcompanhantes([{ nome: '', cpf: '', rg: '' }]);
                         }
                       }}
                       className="mr-2"
@@ -1666,14 +1669,14 @@ const DashboardSolicitante = () => {
                       onChange={(e) => {
                         const novaQuantidade = Math.max(1, parseInt(e.target.value) || 1);
                         setQuantidadeAcompanhantes(novaQuantidade);
-                        
+
                         // Atualizar o array de acompanhantes
                         const novosAcompanhantes = [];
                         for (let i = 0; i < novaQuantidade; i++) {
                           if (acompanhantes[i]) {
                             novosAcompanhantes.push(acompanhantes[i]);
                           } else {
-                            novosAcompanhantes.push({nome: '', cpf: '', rg: ''});
+                            novosAcompanhantes.push({ nome: '', cpf: '', rg: '' });
                           }
                         }
                         setAcompanhantes(novosAcompanhantes);
@@ -1698,7 +1701,7 @@ const DashboardSolicitante = () => {
                               value={acompanhante.nome}
                               onChange={(e) => {
                                 const novosAcompanhantes = [...acompanhantes];
-                                novosAcompanhantes[index] = {...novosAcompanhantes[index], nome: e.target.value};
+                                novosAcompanhantes[index] = { ...novosAcompanhantes[index], nome: e.target.value };
                                 setAcompanhantes(novosAcompanhantes);
                               }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg"
@@ -1712,7 +1715,7 @@ const DashboardSolicitante = () => {
                               value={acompanhante.cpf}
                               onChange={(e) => {
                                 const novosAcompanhantes = [...acompanhantes];
-                                novosAcompanhantes[index] = {...novosAcompanhantes[index], cpf: e.target.value};
+                                novosAcompanhantes[index] = { ...novosAcompanhantes[index], cpf: e.target.value };
                                 setAcompanhantes(novosAcompanhantes);
                               }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg"
@@ -1726,7 +1729,7 @@ const DashboardSolicitante = () => {
                               value={acompanhante.rg}
                               onChange={(e) => {
                                 const novosAcompanhantes = [...acompanhantes];
-                                novosAcompanhantes[index] = {...novosAcompanhantes[index], rg: e.target.value};
+                                novosAcompanhantes[index] = { ...novosAcompanhantes[index], rg: e.target.value };
                                 setAcompanhantes(novosAcompanhantes);
                               }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg"
@@ -1959,7 +1962,7 @@ const DashboardSolicitante = () => {
                   // Resetar estados dos acompanhantes
                   setTemAcompanhantes(false);
                   setQuantidadeAcompanhantes(1);
-                  setAcompanhantes([{nome: '', cpf: '', rg: ''}]);
+                  setAcompanhantes([{ nome: '', cpf: '', rg: '' }]);
                 }}
                 className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg"
               >
@@ -2025,74 +2028,136 @@ const DashboardSolicitante = () => {
           </div>
         </div>
 
-        {/* Minhas Solicitações */}
+        {/* Minhas Solicitações com abas */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b">
             <h3 className="text-xl font-bold text-gray-800">📄 Minhas Solicitações</h3>
           </div>
-          <div className="divide-y">
-            {userSchedulings.length === 0 ? (
-              <div className="p-8 text-center">
-                <p className="text-gray-600">Nenhuma solicitação registrada</p>
-              </div>
-            ) : (
-              userSchedulings.map((scheduling) => (
-                <div key={scheduling.id} className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1 cursor-pointer" onClick={() => {
-                      setCurrentSchedulingDetails(scheduling);
-                      setShowSchedulingDetails(true);
-                    }}>
-                      <div className="flex items-center mb-2">
-                        <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium mr-2">
-                          {scheduling.type === 'servicos-avulsos' ? '🔧 Serviço Avulso' :
-                            scheduling.type === 'visitas' ? '🤝 Visita V3' :
-                              scheduling.type === 'entrega-liberacao' ? '📦 Entrega/Liberação' :
-                                scheduling.type === 'integracao' ? '📚 Integração' :
-                                  '⏰ Acesso Antecipado'}
-                        </span>
-                        <span className={`${scheduling.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
-                          scheduling.status === 'aprovado' ? 'bg-green-100 text-green-800' :
-                          scheduling.status === 'reprovado' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
-                          } px-2 py-1 rounded text-xs font-medium`}>
-                          {scheduling.status === 'pendente' ? 'PENDENTE' :
-                            scheduling.status === 'aprovado' ? 'APROVADO' :
-                            scheduling.status === 'reprovado' ? 'REPROVADO' : 'CANCELADO'}
-                        </span>
-                      </div>
-                      <h4 className="font-bold">{getSchedulingName(scheduling)}</h4>
-                      <p className="text-gray-600 text-sm">Solicitado em: {new Date(scheduling.createdAt).toLocaleString('pt-BR')}</p>
-                      {scheduling.status === 'aprovado' && (
-                        <p className="text-green-600 text-sm font-medium">✅ Autorizado para entrada</p>
-                      )}
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        className={`${scheduling.status !== 'pendente' ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'} text-white px-3 py-1 rounded text-sm`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          startEditing(scheduling);
-                        }}
-                        disabled={scheduling.status !== 'pendente'}
-                      >
-                        📝 Editar
-                      </button>
-                      <button
-                        className={`${scheduling.status !== 'pendente' ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600'} text-white px-3 py-1 rounded text-sm`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCancelSolicitation(scheduling.id);
-                        }}
-                        disabled={scheduling.status !== 'pendente'}
-                      >
-                        ❌ Cancelar
-                      </button>
-                    </div>
+
+          {/* Abas de status */}
+          <div className="border-b">
+            <div className="flex space-x-0">
+              <button
+                className={`px-4 py-3 text-sm font-medium ${activeTab === 'all' ? 'border-b-2 border-blue-500 text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900'}`}
+                onClick={() => setActiveTab('all')}
+              >
+                Todos ({userSchedulings.length})
+              </button>
+              <button
+                className={`px-4 py-3 text-sm font-medium ${activeTab === 'pendente' ? 'border-b-2 border-yellow-500 text-yellow-600 bg-yellow-50' : 'text-gray-600 hover:text-gray-900'}`}
+                onClick={() => setActiveTab('pendente')}
+              >
+                Pendentes ({pendentes})
+              </button>
+              <button
+                className={`px-4 py-3 text-sm font-medium ${activeTab === 'aprovado' ? 'border-b-2 border-green-500 text-green-600 bg-green-50' : 'text-gray-600 hover:text-gray-900'}`}
+                onClick={() => setActiveTab('aprovado')}
+              >
+                Aprovados ({aprovados})
+              </button>
+              <button
+                className={`px-4 py-3 text-sm font-medium ${activeTab === 'reprovado' ? 'border-b-2 border-red-500 text-red-600 bg-red-50' : 'text-gray-600 hover:text-gray-900'}`}
+                onClick={() => setActiveTab('reprovado')}
+              >
+                Reprovados ({reprovados})
+              </button>
+              <button
+                className={`px-4 py-3 text-sm font-medium ${activeTab === 'cancelado' ? 'border-b-2 border-gray-500 text-gray-600 bg-gray-50' : 'text-gray-600 hover:text-gray-900'}`}
+                onClick={() => setActiveTab('cancelado')}
+              >
+                Cancelados ({cancelados})
+              </button>
+            </div>
+          </div>
+
+          {/* Conteúdo das abas */}
+          <div className="max-h-96 overflow-y-auto">
+            <div className="divide-y-2 border-2 border-gray-300 divide-gray-500 space-y-2">
+              {/* Filtrar solicitações baseado na aba ativa */}
+              {(() => {
+                let filteredSchedulings = [];
+                if (activeTab === 'all') {
+                  filteredSchedulings = [...userSchedulings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                } else {
+                  filteredSchedulings = userSchedulings
+                    .filter(s => s.status === activeTab)
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                }
+
+                return filteredSchedulings.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <p className="text-gray-600">
+                      {activeTab === 'all'
+                        ? 'Nenhuma solicitação registrada'
+                        : activeTab === 'pendente'
+                          ? 'Nenhuma solicitação pendente'
+                          : activeTab === 'aprovado'
+                            ? 'Nenhuma solicitação aprovada'
+                            : activeTab === 'reprovado'
+                              ? 'Nenhuma solicitação reprovada'
+                              : 'Nenhuma solicitação cancelada'}
+                    </p>
                   </div>
-                </div>
-              ))
-            )}
+                ) : (
+                  filteredSchedulings.map((scheduling) => (
+                    <div key={scheduling.id} className="p-6">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 cursor-pointer" onClick={() => {
+                          setCurrentSchedulingDetails(scheduling);
+                          setShowSchedulingDetails(true);
+                        }}>
+                          <div className="flex items-center mb-2">
+                            <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium mr-2">
+                              {scheduling.type === 'servicos-avulsos' ? '🔧 Serviço Avulso' :
+                                scheduling.type === 'visitas' ? '🤝 Visita V3' :
+                                  scheduling.type === 'entrega-liberacao' ? '📦 Entrega/Liberação' :
+                                    scheduling.type === 'integracao' ? '📚 Integração' :
+                                      '⏰ Acesso Antecipado'}
+                            </span>
+                            <span className={`${scheduling.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
+                              scheduling.status === 'aprovado' ? 'bg-green-100 text-green-800' :
+                                scheduling.status === 'reprovado' ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'
+                              } px-2 py-1 rounded text-xs font-medium`}>
+                              {scheduling.status === 'pendente' ? 'PENDENTE' :
+                                scheduling.status === 'aprovado' ? 'APROVADO' :
+                                  scheduling.status === 'reprovado' ? 'REPROVADO' : 'CANCELADO'}
+                            </span>
+                          </div>
+                          <h4 className="font-bold">{getSchedulingName(scheduling)}</h4>
+                          <p className="text-gray-600 text-sm">Solicitado em: {new Date(scheduling.createdAt).toLocaleString('pt-BR')}</p>
+                          {scheduling.status === 'aprovado' && (
+                            <p className="text-green-600 text-sm font-medium">✅ Autorizado para entrada</p>
+                          )}
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            className={`${scheduling.status !== 'pendente' ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'} text-white px-3 py-1 rounded text-sm`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditing(scheduling);
+                            }}
+                            disabled={scheduling.status !== 'pendente'}
+                          >
+                            📝 Editar
+                          </button>
+                          <button
+                            className={`${scheduling.status !== 'pendente' ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600'} text-white px-3 py-1 rounded text-sm`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCancelSolicitation(scheduling.id);
+                            }}
+                            disabled={scheduling.status !== 'pendente'}
+                          >
+                            ❌ Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                );
+              })()}
+            </div>
           </div>
         </div>
       </div>
@@ -2109,7 +2174,7 @@ const DashboardSolicitante = () => {
 
       {/* Modal de Edição de Solicitação */}
       {editingScheduling && renderEditSolicitationModal()}
-      
+
       {/* Modal de Detalhes de Solicitação */}
       {showSchedulingDetails && currentSchedulingDetails && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
@@ -2132,25 +2197,24 @@ const DashboardSolicitante = () => {
               <div className="grid md:grid-cols-2 gap-4 text-sm mb-6">
                 <div><strong>Tipo:</strong> {currentSchedulingDetails.type === 'servicos-avulsos' ? '🔧 Serviço Avulso' :
                   currentSchedulingDetails.type === 'visitas' ? '🤝 Visita V3' :
-                  currentSchedulingDetails.type === 'entrega-liberacao' ? '📦 Entrega/Liberação' :
-                  currentSchedulingDetails.type === 'integracao' ? '📚 Integração' :
-                  '⏰ Acesso Antecipado'}</div>
-                <div><strong>Status:</strong> 
-                  <span className={`ml-2 px-2 py-1 rounded text-xs font-medium ${
-                    currentSchedulingDetails.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
+                    currentSchedulingDetails.type === 'entrega-liberacao' ? '📦 Entrega/Liberação' :
+                      currentSchedulingDetails.type === 'integracao' ? '📚 Integração' :
+                        '⏰ Acesso Antecipado'}</div>
+                <div><strong>Status:</strong>
+                  <span className={`ml-2 px-2 py-1 rounded text-xs font-medium ${currentSchedulingDetails.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
                     currentSchedulingDetails.status === 'aprovado' ? 'bg-green-100 text-green-800' :
-                    currentSchedulingDetails.status === 'reprovado' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
+                      currentSchedulingDetails.status === 'reprovado' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                    }`}>
                     {currentSchedulingDetails.status === 'pendente' ? 'PENDENTE' :
                       currentSchedulingDetails.status === 'aprovado' ? 'APROVADO' :
-                      currentSchedulingDetails.status === 'reprovado' ? 'REPROVADO' : 'CANCELADO'}
+                        currentSchedulingDetails.status === 'reprovado' ? 'REPROVADO' : 'CANCELADO'}
                   </span>
                 </div>
                 <div><strong>Solicitado por:</strong> {currentSchedulingDetails.requestedByName}</div>
                 <div><strong>Data de Solicitação:</strong> {new Date(currentSchedulingDetails.createdAt).toLocaleString('pt-BR')}</div>
               </div>
-              
+
               {currentSchedulingDetails.type === 'servicos-avulsos' && (
                 <div className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
@@ -2161,29 +2225,29 @@ const DashboardSolicitante = () => {
                     <div><strong>Responsável Serviço:</strong> {currentSchedulingDetails.data?.responsavelServico || 'N/A'}</div>
                     <div><strong>Número APR:</strong> {currentSchedulingDetails.data?.numeroAPR || 'N/A'}</div>
                   </div>
-                  
+
                   {/* Exibir informações dos acompanhantes se existirem */}
-                  {currentSchedulingDetails.data?.acompanhantes && 
-                    Array.isArray(currentSchedulingDetails.data.acompanhantes) && 
+                  {currentSchedulingDetails.data?.acompanhantes &&
+                    Array.isArray(currentSchedulingDetails.data.acompanhantes) &&
                     currentSchedulingDetails.data.acompanhantes.length > 0 && (
-                    <div className="border-t pt-4">
-                      <h4 className="text-md font-semibold text-gray-800 mb-3">Acompanhantes ({currentSchedulingDetails.data.acompanhantes.length}):</h4>
-                      <div className="space-y-3">
-                        {currentSchedulingDetails.data.acompanhantes.map((acompanhante: any, index: number) => (
-                          <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                              <div><strong>Nome:</strong> {acompanhante.nome || 'N/A'}</div>
-                              <div><strong>CPF:</strong> {acompanhante.cpf || 'N/A'}</div>
-                              <div><strong>RG:</strong> {acompanhante.rg || 'N/A'}</div>
+                      <div className="border-t pt-4">
+                        <h4 className="text-md font-semibold text-gray-800 mb-3">Acompanhantes ({currentSchedulingDetails.data.acompanhantes.length}):</h4>
+                        <div className="space-y-3">
+                          {currentSchedulingDetails.data.acompanhantes.map((acompanhante: any, index: number) => (
+                            <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                                <div><strong>Nome:</strong> {acompanhante.nome || 'N/A'}</div>
+                                <div><strong>CPF:</strong> {acompanhante.cpf || 'N/A'}</div>
+                                <div><strong>RG:</strong> {acompanhante.rg || 'N/A'}</div>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               )}
-              
+
               {currentSchedulingDetails.type === 'visitas' && (
                 <div className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
@@ -2199,29 +2263,29 @@ const DashboardSolicitante = () => {
                     <div><strong>Portaria:</strong> {currentSchedulingDetails.data?.portariaAcesso || 'N/A'}</div>
                     <div className="md:col-span-2"><strong>Motivo:</strong> {currentSchedulingDetails.data?.motivoVisita || 'N/A'}</div>
                   </div>
-                  
+
                   {/* Exibir informações dos acompanhantes se existirem */}
-                  {currentSchedulingDetails.data?.acompanhantes && 
-                    Array.isArray(currentSchedulingDetails.data.acompanhantes) && 
+                  {currentSchedulingDetails.data?.acompanhantes &&
+                    Array.isArray(currentSchedulingDetails.data.acompanhantes) &&
                     currentSchedulingDetails.data.acompanhantes.length > 0 && (
-                    <div className="border-t pt-4">
-                      <h4 className="text-md font-semibold text-gray-800 mb-3">Acompanhantes ({currentSchedulingDetails.data.acompanhantes.length}):</h4>
-                      <div className="space-y-3">
-                        {currentSchedulingDetails.data.acompanhantes.map((acompanhante: any, index: number) => (
-                          <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                              <div><strong>Nome:</strong> {acompanhante.nome || 'N/A'}</div>
-                              <div><strong>CPF:</strong> {acompanhante.cpf || 'N/A'}</div>
-                              <div><strong>RG:</strong> {acompanhante.rg || 'N/A'}</div>
+                      <div className="border-t pt-4">
+                        <h4 className="text-md font-semibold text-gray-800 mb-3">Acompanhantes ({currentSchedulingDetails.data.acompanhantes.length}):</h4>
+                        <div className="space-y-3">
+                          {currentSchedulingDetails.data.acompanhantes.map((acompanhante: any, index: number) => (
+                            <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                                <div><strong>Nome:</strong> {acompanhante.nome || 'N/A'}</div>
+                                <div><strong>CPF:</strong> {acompanhante.cpf || 'N/A'}</div>
+                                <div><strong>RG:</strong> {acompanhante.rg || 'N/A'}</div>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               )}
-              
+
               {currentSchedulingDetails.type === 'entrega-liberacao' && (
                 <div className="grid md:grid-cols-2 gap-4">
                   <div><strong>Motorista:</strong> {currentSchedulingDetails.data?.nomeMotorista || 'N/A'}</div>
@@ -2235,7 +2299,7 @@ const DashboardSolicitante = () => {
                   <div><strong>Portaria:</strong> {currentSchedulingDetails.data?.portariaAcesso || 'N/A'}</div>
                 </div>
               )}
-              
+
               {currentSchedulingDetails.type === 'integracao' && (
                 <div>
                   <div className="grid md:grid-cols-2 gap-4">
@@ -2244,30 +2308,30 @@ const DashboardSolicitante = () => {
                     <div><strong>CPF:</strong> {currentSchedulingDetails.data?.cpf || 'N/A'}</div>
                     <div><strong>RG:</strong> {currentSchedulingDetails.data?.rg || 'N/A'}</div>
                   </div>
-                  
+
                   {/* Exibir informações dos integrantes se existirem */}
-                  {currentSchedulingDetails.data?.integrantes && 
-                    Array.isArray(currentSchedulingDetails.data.integrantes) && 
+                  {currentSchedulingDetails.data?.integrantes &&
+                    Array.isArray(currentSchedulingDetails.data.integrantes) &&
                     currentSchedulingDetails.data.integrantes.length > 0 && (
-                    <div className="border-t pt-4">
-                      <h4 className="text-md font-semibold text-gray-800 mb-3">Integrantes ({currentSchedulingDetails.data.integrantes.length}):</h4>
-                      <div className="space-y-3">
-                        {currentSchedulingDetails.data.integrantes.map((integrante: any, index: number) => (
-                          <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                              <div><strong>Nome:</strong> {integrante.nomeCompleto || 'N/A'}</div>
-                              <div><strong>Empresa:</strong> {integrante.empresa || 'N/A'}</div>
-                              <div><strong>RG:</strong> {integrante.rg || 'N/A'}</div>
-                              <div><strong>CPF:</strong> {integrante.cpf || 'N/A'}</div>
+                      <div className="border-t pt-4">
+                        <h4 className="text-md font-semibold text-gray-800 mb-3">Integrantes ({currentSchedulingDetails.data.integrantes.length}):</h4>
+                        <div className="space-y-3">
+                          {currentSchedulingDetails.data.integrantes.map((integrante: any, index: number) => (
+                            <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                                <div><strong>Nome:</strong> {integrante.nomeCompleto || 'N/A'}</div>
+                                <div><strong>Empresa:</strong> {integrante.empresa || 'N/A'}</div>
+                                <div><strong>RG:</strong> {integrante.rg || 'N/A'}</div>
+                                <div><strong>CPF:</strong> {integrante.cpf || 'N/A'}</div>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               )}
-              
+
               {currentSchedulingDetails.type === 'acesso-antecipado' && (
                 <div className="grid md:grid-cols-2 gap-4">
                   <div><strong>Nome:</strong> {currentSchedulingDetails.data?.nomeCompleto || 'N/A'}</div>
@@ -2284,7 +2348,7 @@ const DashboardSolicitante = () => {
                   <div className="md:col-span-2"><strong>Motivo da Liberação:</strong> {currentSchedulingDetails.data?.motivoLiberacao || 'N/A'}</div>
                 </div>
               )}
-              
+
               <div className="mt-6 pt-4 border-t">
                 <div><strong>Observações:</strong> {currentSchedulingDetails.observacoes || 'Nenhuma'}</div>
                 {currentSchedulingDetails.reviewedAt && (

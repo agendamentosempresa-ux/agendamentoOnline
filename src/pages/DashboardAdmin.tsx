@@ -23,7 +23,7 @@ type NewUserState = {
 
 const DashboardAdmin = () => {
   // Assumindo que addUser e deleteUser usam a SERVICE_ROLE_KEY no AuthContext
-  const { user, logout, users, addUser, adminAddUser, updateUser, updateUserPassword, deleteUser, fetchUsers, fetchLogs, fetchStatistics, isLoading: isAuthLoading } = useAuth();
+  const { user, logout, users, addUser, adminAddUser, updateUser, updateUserPassword, deleteUser, fetchUsers, fetchLogs, fetchStatistics, clearLogs, isLoading: isAuthLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -34,6 +34,9 @@ const DashboardAdmin = () => {
   const [statistics, setStatistics] = useState<any>({ accessCount: 0, scheduleCount: 0, pendingCount: 0 });
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [loadingStats, setLoadingStats] = useState(false);
+
+  // State for confirmation dialog
+  const [showClearLogsDialog, setShowClearLogsDialog] = useState(false);
 
   // Fetch logs when component mounts and user is admin
   useEffect(() => {
@@ -55,6 +58,27 @@ const DashboardAdmin = () => {
 
     loadLogs();
   }, [user, fetchLogs]);
+
+  // Function to clear logs
+  const handleClearLogs = async () => {
+    try {
+      await clearLogs();
+      setLogs([]); // Clear logs from UI
+      toast({
+        title: "Sucesso!",
+        description: 'Logs do sistema limpos com sucesso!',
+      });
+    } catch (error) {
+      console.error('Erro ao limpar logs:', error);
+      toast({
+        title: "Erro!",
+        description: 'Erro ao limpar logs do sistema',
+        variant: "destructive",
+      });
+    } finally {
+      setShowClearLogsDialog(false);
+    }
+  };
 
   // Fetch statistics when component mounts and user is admin
   useEffect(() => {
@@ -240,10 +264,12 @@ const DashboardAdmin = () => {
     <div id="dashboard-admin" className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-3xl font-bold text-gray-800 flex items-center">
-            <span className="text-4xl mr-3">🛡️</span>
+          <h2 className="text-3xl font-bold text-gray-800 flex items-center border border-gray-400 rounded-xl p-4 shadow-sm bg-gray-50">
+            <span className="text-3xl mr-1">🛡️</span>
             Painel Administrativo
           </h2>
+
+
           <p className="text-gray-800">Bem-vindo, <span className="font-semibold">{user?.name || 'Administrador'}</span>. Seu perfil: <span className="font-semibold text-purple-600">{user?.role?.toUpperCase()}</span></p>
         </div>
         <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">Sair</button>
@@ -375,8 +401,14 @@ const DashboardAdmin = () => {
 
       {/* Logs do Sistema (Atualizado para mostrar logs reais do banco de dados) */}
       <div className="bg-white border-2 border-gray-400 rounded-lg shadow">
-        <div className="p-6 border-b">
+        <div className="p-6 border-b flex justify-between items-center">
           <h3 className="text-xl font-bold text-gray-800">📋 Logs Recentes do Sistema</h3>
+          <button
+            onClick={() => setShowClearLogsDialog(true)}
+            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm flex items-center"
+          >
+            🗑️ Limpar
+          </button>
         </div>
         <div className="p-6">
           {loadingLogs ? (
@@ -557,7 +589,15 @@ const DashboardAdmin = () => {
             </div>
           </div>
 
-          <h4 className="text-lg font-bold text-gray-800 mb-4">📋 Logs Recentes do Sistema</h4>
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="text-lg font-bold text-gray-800">📋 Logs Recentes do Sistema</h4>
+            <button
+              onClick={() => setShowClearLogsDialog(true)}
+              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm flex items-center"
+            >
+              🗑️ Limpar
+            </button>
+          </div>
           <div className="space-y-3 text-sm max-h-96 overflow-y-auto">
             {loadingLogs ? (
               <div className="text-center py-4">Carregando logs...</div>
@@ -782,6 +822,37 @@ const DashboardAdmin = () => {
       {/* Modals */}
       {showNewUserForm && renderNewUserForm()}
       {showReportsModal && renderReportsModal()}
+
+      {/* Confirmation Dialog for Clearing Logs */}
+      {showClearLogsDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+                <span className="text-red-600 text-xl">⚠️</span>
+              </div>
+              <h3 className="text-lg font-bold text-center text-gray-900 mb-2">Tem certeza?</h3>
+              <p className="text-gray-600 text-center mb-6">
+                Você está prestes a apagar todos os logs do sistema. Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowClearLogsDialog(false)}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 rounded-lg font-semibold transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleClearLogs}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-semibold transition-colors"
+                >
+                  Sim, Limpar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div >
   );
 
