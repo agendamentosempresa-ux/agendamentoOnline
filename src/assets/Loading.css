@@ -2,10 +2,10 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100%;
     width: 100%;
-    scale: 2;
     height: 12vh;
+    scale: 2;
+    /* desktop padrão */
 }
 
 .Loading {
@@ -60,21 +60,62 @@
     }
 }
 
-/* Čip */
 .chip-body {
     rx: 20;
     ry: 20;
 }
 
-/* Text uvnitř čipu */
 .chip-text {
     font-weight: bold;
     letter-spacing: 1px;
 }
 
-/* Piny */
 .chip-pin {
     stroke: #444;
     stroke-width: 0.5;
     filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6));
+}
+
+/* ---------------------------------
+   🔹 Responsividade refinada
+---------------------------------- */
+
+/* Tablets (até 1024px) */
+@media (max-width: 1024px) {
+    .main-container {
+        scale: 1.4;
+        height: 10vh;
+    }
+
+    .Loading {
+        height: 8vh;
+    }
+}
+
+/* Celulares em modo paisagem */
+@media (max-width: 900px) and (orientation: landscape) {
+    .main-container {
+        scale: 1.2;
+        height: 9vh;
+    }
+}
+
+/* Celulares em pé (retrato) */
+@media (max-width: 768px) and (orientation: portrait) {
+    .main-container {
+        scale: 1.25;
+        height: auto;
+    }
+
+    .Loading {
+        height: 8vh;
+    }
+}
+
+/* Telas muito pequenas (ex: iPhone SE, 360px) */
+@media (max-width: 400px) {
+    .main-container {
+        scale: 1.1;
+        height: auto;
+    }
 }
