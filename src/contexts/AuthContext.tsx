@@ -589,17 +589,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const payload: { full_name?: string, email?: string, role?: UserRole } = {};
 
     if (updates.name) payload.full_name = updates.name;
-    if (updates.email) payload.email = updates.email;
     if (updates.role) payload.role = updates.role;
 
-    const { error } = await supabase
-      .from('profiles')
-      .update(payload)
-      .eq('id', id);
+    // Update the profiles table first
+    if (Object.keys(payload).length > 0) {
+      const { error } = await supabase
+        .from('profiles')
+        .update(payload)
+        .eq('id', id);
 
-    if (error) {
-      console.error('Erro ao atualizar perfil:', error);
-      throw error;
+      if (error) {
+        console.error('Erro ao atualizar perfil:', error);
+        throw error;
+      }
+    }
+
+    // If email is being updated, update in Supabase Auth as well
+    if (updates.email) {
+      if (!supabaseAdmin) throw new Error('Cliente Admin não configurado. Verifique a SERVICE_ROLE_KEY para atualizar e-mail.');
+      
+      const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(id, {
+        email: updates.email
+      });
+
+      if (authError) {
+        console.error('Erro ao atualizar e-mail no Auth:', authError);
+        throw authError;
+      }
+
+      // Also update the email in the profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ email: updates.email })
+        .eq('id', id);
+
+      if (profileError) {
+        console.error('Erro ao atualizar e-mail no perfil:', profileError);
+        throw profileError;
+      }
     }
 
     // Recarrega a lista
